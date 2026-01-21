@@ -785,6 +785,82 @@ w.document.write(h);w.document.close();
 w.onload=function(){setTimeout(function(){w.print()},300)};
 }
 function closeOrderModal(){document.getElementById('order-modal').style.display='none';window.location.href='<?php echo esc_url($debtor_record_done_url); ?>'}
+
+function sendOrderReceipt(){
+    var receiptText = buildOrderReceiptText();
+    if (!receiptText) {
+        alert('Unable to build receipt message');
+        return;
+    }
+    var phone = '<?php echo esc_js($debtor->phone ?? ''); ?>';
+    if (!phone) {
+        alert('No phone number found for this debtor.');
+        return;
+    }
+    sendOrderReceiptWithFallback('order-print-area', receiptText, phone);
+}
+
+function buildOrderReceiptText(){
+    var lines = [];
+    lines.push('CHINEMEREM FOODS');
+    lines.push('Credit Order Receipt');
+    lines.push('Order: <?php echo esc_js($order_receipt['order_number']); ?>');
+    lines.push('Date: <?php echo esc_js($order_receipt['date']); ?>');
+    lines.push('Time: <?php echo esc_js($order_receipt['time']); ?>');
+    lines.push('Debtor: <?php echo esc_js($order_receipt['debtor_name']); ?>');
+    lines.push('Amount: ₦<?php echo esc_js(number_format($order_receipt['total'], 0)); ?>');
+    lines.push('New Balance: ₦<?php echo esc_js(number_format($order_receipt['new_balance'], 0)); ?>');
+    lines.push('Powered by BendlessTech');
+    return lines.join('\n');
+}
+
+function sendOrderReceiptWithFallback(elementId, receiptText, phone){
+    var receiptNode = document.getElementById(elementId);
+    if (!receiptNode) {
+        alert('Receipt image not available.');
+        return;
+    }
+    var normalizedPhone = phone.replace(/[^0-9]/g, '');
+    var baseUrl = normalizedPhone ? 'https://wa.me/' + normalizedPhone : 'https://wa.me/';
+    var placeholderText = receiptText + '\n\nPreparing receipt image...';
+    var shareWindow = window.open(baseUrl + '?text=' + encodeURIComponent(placeholderText), '_blank');
+    html2canvas(receiptNode, { backgroundColor: '#ffffff', scale: 2 }).then(function(canvas) {
+        canvas.toBlob(function(blob) {
+            if (!blob) {
+                alert('Receipt image could not be created.');
+                if (shareWindow) {
+                    shareWindow.close();
+                }
+                return;
+            }
+            var file = new File([blob], 'receipt.png', { type: 'image/png' });
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                navigator.share({
+                    title: 'Receipt',
+                    text: receiptText,
+                    files: [file]
+                }).catch(function(error){
+                    console.warn('Share cancelled', error);
+                });
+                if (shareWindow) {
+                    shareWindow.close();
+                }
+                return;
+            }
+            var reader = new FileReader();
+            reader.onloadend = function() {
+                var message = receiptText + '\n\nReceipt image (tap to download): ' + reader.result;
+                var url = baseUrl + '?text=' + encodeURIComponent(message);
+                if (shareWindow) {
+                    shareWindow.location.href = url;
+                } else {
+                    window.open(url, '_blank');
+                }
+            };
+            reader.readAsDataURL(blob);
+        });
+    });
+}
 </script>
 <?php endif; ?>
 
@@ -924,33 +1000,6 @@ h+='<div class="footer"><p>Payment received with thanks!</p><p style="margin-top
 h+='</div></body></html>';
 w.document.write(h);w.document.close();
 w.onload=function(){setTimeout(function(){w.print()},300)};
-}
-
-function sendOrderReceipt(){
-    var receiptText = buildOrderReceiptText();
-    if (!receiptText) {
-        alert('Unable to build receipt message');
-        return;
-    }
-    if (!window.cfiDebtorHasPhone) {
-        alert('No phone number found for this debtor.');
-        return;
-    }
-    sendReceiptWithFallback('order-print-area', receiptText, true);
-}
-
-function buildOrderReceiptText(){
-    var lines = [];
-    lines.push('CHINEMEREM FOODS');
-    lines.push('Credit Order Receipt');
-    lines.push('Order: <?php echo esc_js($order_receipt['order_number']); ?>');
-    lines.push('Date: <?php echo esc_js($order_receipt['date']); ?>');
-    lines.push('Time: <?php echo esc_js($order_receipt['time']); ?>');
-    lines.push('Debtor: <?php echo esc_js($order_receipt['debtor_name']); ?>');
-    lines.push('Amount: ₦<?php echo esc_js(number_format($order_receipt['total'], 0)); ?>');
-    lines.push('New Balance: ₦<?php echo esc_js(number_format($order_receipt['new_balance'], 0)); ?>');
-    lines.push('Powered by BendlessTech');
-    return lines.join('\\n');
 }
 
 function sendPayReceipt(){
