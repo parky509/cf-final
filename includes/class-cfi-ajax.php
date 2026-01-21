@@ -1197,6 +1197,26 @@ class CFI_Ajax {
                     $results[] = array('type' => $type, 'success' => $result['success']);
                     break;
                     
+                case 'debtor_order':
+                    $debtor_id = absint($payload['debtor_id'] ?? 0);
+                    $order_payload = $this->sanitize_order_data($payload);
+                    $result = CFI_Debtors::add_order($debtor_id, $order_payload);
+                    $results[] = array('type' => $type, 'success' => $result['success']);
+                    break;
+                    
+                case 'debtor_payment':
+                    $debtor_id = absint($payload['debtor_id'] ?? 0);
+                    $payment_payload = array(
+                        'transfer_amount' => floatval($payload['transfer_amount'] ?? 0),
+                        'cash_amount' => floatval($payload['cash_amount'] ?? 0),
+                        'home_calculation' => floatval($payload['home_calculation'] ?? 0),
+                        'payment_method' => sanitize_text_field($payload['payment_method'] ?? 'transfer'),
+                        'bank_name' => sanitize_text_field($payload['bank_name'] ?? 'Moniepoint MFB'),
+                    );
+                    $result = CFI_Debtors::add_payment($debtor_id, $payment_payload);
+                    $results[] = array('type' => $type, 'success' => $result['success']);
+                    break;
+                    
                 case 'expense':
                     $result = CFI_Expenses::add(
                         sanitize_textarea_field($payload['description'] ?? ''),
@@ -1204,8 +1224,6 @@ class CFI_Ajax {
                     );
                     $results[] = array('type' => $type, 'success' => (bool) $result);
                     break;
-                    
-                // Add more sync types as needed
             }
         }
         

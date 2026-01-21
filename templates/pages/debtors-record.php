@@ -509,6 +509,269 @@ table input{width:50px}
 function calcRow(el){var r=el.closest('.order-row'),p=parseFloat(r.dataset.price)||0,q=parseFloat(r.querySelector('.qty').value)||0,d=parseFloat(r.querySelector('.disc').value)||0,t=(p*q)-d;if(t<0)t=0;r.querySelector('.row-total').textContent=t.toFixed(2);calcTotal()}
 function calcTotal(){var tots=document.querySelectorAll('.row-total'),g=0;tots.forEach(function(e){g+=parseFloat(e.textContent)||0});var f='₦'+g.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');document.getElementById('grand-total').textContent=f;var disp=document.getElementById('grand-display'),hl=document.getElementById('grand-highlight');if(g>0){disp.style.display='block';hl.textContent=f}else{disp.style.display='none'}}
 document.querySelectorAll('input[type="number"]').forEach(function(i){i.addEventListener('focus',function(){var s=this;setTimeout(function(){s.select()},10)})});
+
+// Offline order support
+var cfiDebtorOrderForm = document.getElementById('order-form');
+if (cfiDebtorOrderForm) {
+    cfiDebtorOrderForm.addEventListener('submit', function(e) {
+        if (!navigator.onLine) {
+            e.preventDefault();
+            submitDebtorOrderOffline();
+        }
+    });
+}
+
+function submitDebtorOrderOffline() {
+    var items = collectDebtorOrderItems();
+    if (!items || items.length === 0) {
+        alert('Please add at least one item to the order.');
+        return;
+    }
+    
+    var grandTotal = 0;
+    var totalQty = 0;
+    var totalDiscount = 0;
+    items.forEach(function(item) {
+        grandTotal += item.total;
+        totalQty += item.quantity;
+        totalDiscount += item.discount;
+    });
+    
+    if (grandTotal <= 0) {
+        alert('Order total must be greater than zero.');
+        return;
+    }
+    
+    var now = new Date();
+    var orderNumber = 'OFF-' + now.getFullYear() + 
+        String(now.getMonth() + 1).padStart(2, '0') + 
+        String(now.getDate()).padStart(2, '0') + '-' + 
+        String(now.getHours()).padStart(2, '0') + 
+        String(now.getMinutes()).padStart(2, '0') + 
+        String(now.getSeconds()).padStart(2, '0');
+    
+    var payload = {
+        debtor_id: <?php echo (int)$selected_debtor->id; ?>,
+        items: items.map(function(item) {
+            return {
+                product_id: item.product_id,
+                quantity: item.quantity,
+                price: item.price,
+                discount: item.discount,
+                total: item.total
+            };
+        }),
+        total_quantity: totalQty,
+        total_amount: grandTotal + totalDiscount,
+        discount_amount: totalDiscount,
+        grand_total: grandTotal
+    };
+    
+    var receipt = {
+        order_number: orderNumber,
+        debtor_name: '<?php echo esc_js($selected_debtor->name); ?>',
+        date: formatDebtorOfflineDate(now),
+        time: formatDebtorOfflineTime(now),
+        items: items,
+        total_qty: totalQty,
+        subtotal: grandTotal + totalDiscount,
+        discount: totalDiscount,
+        grand_total: grandTotal,
+        current_debt: <?php echo floatval($selected_debtor->display_debt); ?>,
+        new_balance: <?php echo floatval($selected_debtor->display_debt); ?> + grandTotal,
+        staff: (window.cfiData && cfiData.currentUser) ? cfiData.currentUser : ''
+    };
+    
+    // Add to offline queue
+    if (window.CFI && CFI.offline && typeof CFI.offline.addToQueue === 'function') {
+        CFI.offline.addToQueue('debtor_order', payload);
+    } else {
+        // Fallback: save to localStorage directly
+        var queue = JSON.parse(localStorage.getItem('cfi_offline_queue') || '[]');
+        queue.push({
+            id: 'off_' + Date.now(),
+            type: 'debtor_order',
+            data: payload,
+            timestamp: Date.now()
+        });
+        localStorage.setItem('cfi_offline_queue', JSON.stringify(queue));
+    }
+    
+    showDebtorOfflineSuccess('Credit order submitted offline. It will sync when you are back online.');
+    showDebtorOfflineReceipt(receipt, 'order');
+}
+
+function collectDebtorOrderItems() {
+    var rows = document.querySelectorAll('.order-row');
+    var items = [];
+    rows.forEach(function(row, idx) {
+        var qty = parseFloat(row.querySelector('.qty').value) || 0;
+        if (qty > 0) {
+            var price = parseFloat(row.dataset.price) || 0;
+            var disc = parseFloat(row.querySelector('.disc').value) || 0;
+            var total = (price * qty) - disc;
+            if (total < 0) total = 0;
+            var productId = row.querySelector('input[name*="product_id"]').value;
+            var productName = row.querySelector('td').textContent.trim();
+            items.push({
+                product_id: productId,
+                product_name: productName,
+                quantity: qty,
+                price: price,
+                discount: disc,
+                total: total
+            });
+        }
+    });
+    return items;
+}
+
+function formatDebtorOfflineDate(date) {
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return months[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
+}
+
+function formatDebtorOfflineTime(date) {
+    var h = date.getHours();
+    var m = date.getMinutes();
+    var ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    if (h === 0) h = 12;
+    return h + ':' + String(m).padStart(2, '0') + ' ' + ampm;
+}
+
+function showDebtorOfflineSuccess(message) {
+    var existing = document.querySelector('.cfi-offline-success');
+    if (existing) existing.remove();
+    
+    var div = document.createElement('div');
+    div.className = 'cfi-offline-success';
+    div.innerHTML = '<i class="fas fa-check-circle"></i> ' + message;
+    div.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#16a34a;color:#fff;padding:1rem 2rem;border-radius:8px;font-weight:600;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
+    document.body.appendChild(div);
+    setTimeout(function() { div.remove(); }, 5000);
+}
+
+function showDebtorOfflineReceipt(receipt, type) {
+    var existing = document.getElementById('debtor-offline-receipt-modal');
+    if (existing) existing.remove();
+    
+    var modal = document.createElement('div');
+    modal.id = 'debtor-offline-receipt-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:99998;padding:1rem;box-sizing:border-box;';
+    
+    var content = buildDebtorOfflineReceiptContent(receipt, type);
+    
+    modal.innerHTML = '<div style="background:#fff;border-radius:12px;max-width:400px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 10px 40px rgba(0,0,0,0.3);">' +
+        '<div style="background:#001943;color:#fff;padding:1rem;display:flex;justify-content:space-between;align-items:center;border-radius:12px 12px 0 0;">' +
+            '<h3 style="margin:0;font-size:1rem;"><i class="fas fa-receipt"></i> ' + (type === 'order' ? 'Credit Order' : 'Payment') + ' Receipt</h3>' +
+            '<button type="button" onclick="closeDebtorOfflineReceipt()" style="background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;">&times;</button>' +
+        '</div>' +
+        '<div id="debtor-offline-receipt-print-area">' + content + '</div>' +
+        '<div style="padding:1rem;display:flex;gap:0.5rem;justify-content:center;border-top:1px solid #e5e7eb;">' +
+            '<button type="button" onclick="printDebtorOfflineReceipt()" class="btn" style="background:#7c3aed;color:#fff;"><i class="fas fa-print"></i> Print</button>' +
+            '<button type="button" onclick="closeDebtorOfflineReceipt()" class="btn" style="background:#16a34a;color:#fff;"><i class="fas fa-check"></i> Done</button>' +
+        '</div>' +
+    '</div>';
+    
+    document.body.appendChild(modal);
+}
+
+function buildDebtorOfflineReceiptContent(receipt, type) {
+    var html = '<div style="padding:1rem;font-family:Arial,sans-serif;">';
+    html += '<div style="text-align:center;border-bottom:2px dashed #ccc;padding-bottom:0.75rem;margin-bottom:0.75rem;">';
+    html += '<h2 style="margin:0 0 0.25rem 0;color:#001943;font-size:1.25rem;">CHINEMEREM FOODS</h2>';
+    html += '<p style="margin:0;color:#666;font-size:0.8rem;">Inventory Management System</p>';
+    html += '</div>';
+    
+    html += '<div style="margin-bottom:0.75rem;font-size:0.85rem;">';
+    html += '<p style="margin:0.25rem 0;"><strong>' + (type === 'order' ? 'Order' : 'Receipt') + '#:</strong> ' + receipt.order_number + '</p>';
+    html += '<p style="margin:0.25rem 0;"><strong>Date:</strong> ' + receipt.date + '</p>';
+    html += '<p style="margin:0.25rem 0;"><strong>Time:</strong> ' + receipt.time + '</p>';
+    html += '<p style="margin:0.25rem 0;"><strong>Debtor:</strong> <span style="color:#dc2626;">' + receipt.debtor_name + '</span></p>';
+    if (receipt.staff) {
+        html += '<p style="margin:0.25rem 0;"><strong>Staff:</strong> ' + receipt.staff + '</p>';
+    }
+    html += '</div>';
+    
+    if (type === 'order' && receipt.items) {
+        html += '<div style="border-top:1px solid #ccc;border-bottom:1px solid #ccc;padding:0.5rem 0;margin-bottom:0.75rem;">';
+        html += '<table style="width:100%;border-collapse:collapse;font-size:0.8rem;">';
+        html += '<tr style="border-bottom:1px solid #eee;"><th style="text-align:left;padding:0.25rem 0;">Item</th><th style="text-align:right;">Qty</th><th style="text-align:right;">Total</th></tr>';
+        receipt.items.forEach(function(item) {
+            html += '<tr><td style="padding:0.25rem 0;">' + item.product_name + '</td>';
+            html += '<td style="text-align:right;">' + item.quantity + '</td>';
+            html += '<td style="text-align:right;">₦' + item.total.toFixed(2) + '</td></tr>';
+            if (item.discount > 0) {
+                html += '<tr><td colspan="2" style="font-size:0.75rem;color:#666;padding-left:0.5rem;">Discount</td>';
+                html += '<td style="text-align:right;color:#dc2626;font-size:0.75rem;">-₦' + item.discount.toFixed(2) + '</td></tr>';
+            }
+        });
+        html += '</table>';
+        html += '</div>';
+        
+        html += '<div style="margin-bottom:0.75rem;font-size:0.9rem;">';
+        if (receipt.discount > 0) {
+            html += '<p style="margin:0.25rem 0;display:flex;justify-content:space-between;"><span>Total Discount:</span><span style="color:#dc2626;">-₦' + receipt.discount.toFixed(2) + '</span></p>';
+        }
+        html += '<p style="margin:0.25rem 0;display:flex;justify-content:space-between;font-weight:700;font-size:1rem;"><span>Order Total:</span><span>₦' + receipt.grand_total.toFixed(2) + '</span></p>';
+        html += '</div>';
+        
+        html += '<div style="background:#fef2f2;padding:0.75rem;border-radius:8px;margin-bottom:0.75rem;">';
+        html += '<p style="margin:0.25rem 0;display:flex;justify-content:space-between;"><span>Previous Balance:</span><span>₦' + receipt.current_debt.toFixed(2) + '</span></p>';
+        html += '<p style="margin:0.25rem 0;display:flex;justify-content:space-between;font-weight:700;color:#dc2626;"><span>New Balance:</span><span>₦' + receipt.new_balance.toFixed(2) + '</span></p>';
+        html += '</div>';
+    } else if (type === 'payment') {
+        html += '<div style="margin-bottom:0.75rem;font-size:0.9rem;">';
+        html += '<p style="margin:0.25rem 0;display:flex;justify-content:space-between;"><span>Balance Before:</span><span style="color:#dc2626;">₦' + receipt.balance_before.toFixed(2) + '</span></p>';
+        html += '<p style="margin:0.25rem 0;display:flex;justify-content:space-between;font-weight:700;font-size:1rem;"><span>Payment Amount:</span><span style="color:#16a34a;">₦' + receipt.payment_amount.toFixed(2) + '</span></p>';
+        if (receipt.transfer_amount > 0) {
+            html += '<p style="margin:0.25rem 0;display:flex;justify-content:space-between;padding-left:1rem;font-size:0.85rem;"><span>Transfer (' + receipt.bank_name + '):</span><span>₦' + receipt.transfer_amount.toFixed(2) + '</span></p>';
+        }
+        if (receipt.cash_amount > 0) {
+            html += '<p style="margin:0.25rem 0;display:flex;justify-content:space-between;padding-left:1rem;font-size:0.85rem;"><span>Cash:</span><span>₦' + receipt.cash_amount.toFixed(2) + '</span></p>';
+        }
+        if (receipt.home_amount > 0) {
+            html += '<p style="margin:0.25rem 0;display:flex;justify-content:space-between;padding-left:1rem;font-size:0.85rem;"><span>Home Calculation:</span><span>₦' + receipt.home_amount.toFixed(2) + '</span></p>';
+        }
+        html += '</div>';
+        
+        html += '<div style="background:#f0fdf4;padding:0.75rem;border-radius:8px;margin-bottom:0.75rem;">';
+        html += '<p style="margin:0;display:flex;justify-content:space-between;font-weight:700;color:' + (receipt.new_balance > 0 ? '#dc2626' : '#16a34a') + ';"><span>New Balance:</span><span>₦' + receipt.new_balance.toFixed(2) + '</span></p>';
+        html += '</div>';
+    }
+    
+    html += '<div style="text-align:center;padding-top:0.75rem;border-top:2px dashed #ccc;">';
+    html += '<p style="margin:0;color:#dc2626;font-weight:600;font-size:0.8rem;"><i class="fas fa-wifi"></i> Submitted Offline</p>';
+    html += '<p style="margin:0.25rem 0 0 0;color:#666;font-size:0.75rem;">Will sync when back online</p>';
+    html += '<p style="margin:0.5rem 0 0 0;color:#666;font-size:0.7rem;">Powered by BendlessTech</p>';
+    html += '</div>';
+    html += '</div>';
+    
+    return html;
+}
+
+function closeDebtorOfflineReceipt() {
+    var modal = document.getElementById('debtor-offline-receipt-modal');
+    if (modal) modal.remove();
+    // Redirect to debtors list
+    window.location.href = '<?php echo esc_url(remove_query_arg(array('debtor','action'))); ?>';
+}
+
+function printDebtorOfflineReceipt() {
+    var printArea = document.getElementById('debtor-offline-receipt-print-area');
+    if (!printArea) return;
+    
+    var w = window.open('', '_blank', 'width=400,height=600');
+    w.document.write('<!DOCTYPE html><html><head><title>Print Receipt</title>');
+    w.document.write('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">');
+    w.document.write('<style>@page{size:80mm auto;margin:0}body{margin:0;padding:0;font-family:Arial,sans-serif;}</style>');
+    w.document.write('</head><body>');
+    w.document.write(printArea.innerHTML);
+    w.document.write('</body></html>');
+    w.document.close();
+    w.onload = function() { setTimeout(function() { w.print(); }, 300); };
+}
 </script>
 
 <?php elseif ($selected_debtor && $action === 'pay') : ?>
@@ -580,6 +843,212 @@ function updatePayTotal(){var t=parseFloat(document.getElementById('transfer_amo
 document.getElementById('pay-total').textContent='₦'+tot.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
 var diff=debt-tot,w=document.getElementById('pay-warn');
 if(Math.abs(diff)>0.01&&tot>0){w.style.display='block';if(diff>0){w.textContent='Payment is ₦'+diff.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',')+' less than debt';w.style.background='#fee2e2';w.style.color='#991b1b'}else{w.textContent='Payment exceeds debt by ₦'+Math.abs(diff).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');w.style.background='#fef3c7';w.style.color='#92400e'}}else{w.style.display='none'}}
+
+// Offline payment support
+var cfiPayForm = document.getElementById('pay-form');
+if (cfiPayForm) {
+    cfiPayForm.addEventListener('submit', function(e) {
+        if (!navigator.onLine) {
+            e.preventDefault();
+            submitDebtorPaymentOffline();
+        }
+    });
+}
+
+function submitDebtorPaymentOffline() {
+    var transferAmount = parseFloat(document.getElementById('transfer_amount').value) || 0;
+    var cashAmount = parseFloat(document.getElementById('cash_amount').value) || 0;
+    var homeEl = document.getElementById('home_amount');
+    var homeAmount = homeEl ? (parseFloat(homeEl.value) || 0) : 0;
+    var totalPayment = transferAmount + cashAmount + homeAmount;
+    
+    if (totalPayment <= 0) {
+        alert('Please enter a payment amount.');
+        return;
+    }
+    
+    var bankInput = document.querySelector('input[name="bank_name"]:checked');
+    var bankName = bankInput ? bankInput.value : 'Moniepoint MFB';
+    
+    var paymentMethod = 'transfer';
+    if (transferAmount > 0 && cashAmount > 0) {
+        paymentMethod = 'split';
+    } else if (cashAmount > 0) {
+        paymentMethod = 'cash';
+    }
+    
+    var now = new Date();
+    var receiptNumber = 'PAY-' + now.getFullYear() + 
+        String(now.getMonth() + 1).padStart(2, '0') + 
+        String(now.getDate()).padStart(2, '0') + '-' + 
+        String(now.getHours()).padStart(2, '0') + 
+        String(now.getMinutes()).padStart(2, '0') + 
+        String(now.getSeconds()).padStart(2, '0');
+    
+    var currentDebt = <?php echo floatval($selected_debtor->display_debt); ?>;
+    var newBalance = currentDebt - totalPayment;
+    
+    var payload = {
+        debtor_id: <?php echo (int)$selected_debtor->id; ?>,
+        transfer_amount: transferAmount,
+        cash_amount: cashAmount,
+        home_calculation: homeAmount,
+        payment_method: paymentMethod,
+        bank_name: bankName
+    };
+    
+    var receipt = {
+        order_number: receiptNumber,
+        debtor_name: '<?php echo esc_js($selected_debtor->name); ?>',
+        date: formatPaymentOfflineDate(now),
+        time: formatPaymentOfflineTime(now),
+        balance_before: currentDebt,
+        payment_amount: totalPayment,
+        transfer_amount: transferAmount,
+        cash_amount: cashAmount,
+        home_amount: homeAmount,
+        bank_name: bankName,
+        new_balance: newBalance,
+        staff: (window.cfiData && cfiData.currentUser) ? cfiData.currentUser : ''
+    };
+    
+    // Add to offline queue
+    if (window.CFI && CFI.offline && typeof CFI.offline.addToQueue === 'function') {
+        CFI.offline.addToQueue('debtor_payment', payload);
+    } else {
+        // Fallback: save to localStorage directly
+        var queue = JSON.parse(localStorage.getItem('cfi_offline_queue') || '[]');
+        queue.push({
+            id: 'off_' + Date.now(),
+            type: 'debtor_payment',
+            data: payload,
+            timestamp: Date.now()
+        });
+        localStorage.setItem('cfi_offline_queue', JSON.stringify(queue));
+    }
+    
+    showPaymentOfflineSuccess('Payment recorded offline. It will sync when you are back online.');
+    showPaymentOfflineReceipt(receipt);
+}
+
+function formatPaymentOfflineDate(date) {
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return months[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
+}
+
+function formatPaymentOfflineTime(date) {
+    var h = date.getHours();
+    var m = date.getMinutes();
+    var ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    if (h === 0) h = 12;
+    return h + ':' + String(m).padStart(2, '0') + ' ' + ampm;
+}
+
+function showPaymentOfflineSuccess(message) {
+    var existing = document.querySelector('.cfi-offline-success');
+    if (existing) existing.remove();
+    
+    var div = document.createElement('div');
+    div.className = 'cfi-offline-success';
+    div.innerHTML = '<i class="fas fa-check-circle"></i> ' + message;
+    div.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#16a34a;color:#fff;padding:1rem 2rem;border-radius:8px;font-weight:600;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
+    document.body.appendChild(div);
+    setTimeout(function() { div.remove(); }, 5000);
+}
+
+function showPaymentOfflineReceipt(receipt) {
+    var existing = document.getElementById('payment-offline-receipt-modal');
+    if (existing) existing.remove();
+    
+    var modal = document.createElement('div');
+    modal.id = 'payment-offline-receipt-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:99998;padding:1rem;box-sizing:border-box;';
+    
+    var content = buildPaymentOfflineReceiptContent(receipt);
+    
+    modal.innerHTML = '<div style="background:#fff;border-radius:12px;max-width:400px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 10px 40px rgba(0,0,0,0.3);">' +
+        '<div style="background:#16a34a;color:#fff;padding:1rem;display:flex;justify-content:space-between;align-items:center;border-radius:12px 12px 0 0;">' +
+            '<h3 style="margin:0;font-size:1rem;"><i class="fas fa-receipt"></i> Payment Receipt</h3>' +
+            '<button type="button" onclick="closePaymentOfflineReceipt()" style="background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;">&times;</button>' +
+        '</div>' +
+        '<div id="payment-offline-receipt-print-area">' + content + '</div>' +
+        '<div style="padding:1rem;display:flex;gap:0.5rem;justify-content:center;border-top:1px solid #e5e7eb;">' +
+            '<button type="button" onclick="printPaymentOfflineReceipt()" class="btn" style="background:#7c3aed;color:#fff;"><i class="fas fa-print"></i> Print</button>' +
+            '<button type="button" onclick="closePaymentOfflineReceipt()" class="btn" style="background:#16a34a;color:#fff;"><i class="fas fa-check"></i> Done</button>' +
+        '</div>' +
+    '</div>';
+    
+    document.body.appendChild(modal);
+}
+
+function buildPaymentOfflineReceiptContent(receipt) {
+    var html = '<div style="padding:1rem;font-family:Arial,sans-serif;">';
+    html += '<div style="text-align:center;border-bottom:2px dashed #ccc;padding-bottom:0.75rem;margin-bottom:0.75rem;">';
+    html += '<h2 style="margin:0 0 0.25rem 0;color:#001943;font-size:1.25rem;">CHINEMEREM FOODS</h2>';
+    html += '<p style="margin:0;color:#666;font-size:0.8rem;">Debt Payment Receipt</p>';
+    html += '</div>';
+    
+    html += '<div style="margin-bottom:0.75rem;font-size:0.85rem;">';
+    html += '<p style="margin:0.25rem 0;"><strong>Receipt#:</strong> ' + receipt.order_number + '</p>';
+    html += '<p style="margin:0.25rem 0;"><strong>Date:</strong> ' + receipt.date + '</p>';
+    html += '<p style="margin:0.25rem 0;"><strong>Time:</strong> ' + receipt.time + '</p>';
+    html += '<p style="margin:0.25rem 0;"><strong>Debtor:</strong> <span style="color:#16a34a;">' + receipt.debtor_name + '</span></p>';
+    if (receipt.staff) {
+        html += '<p style="margin:0.25rem 0;"><strong>Staff:</strong> ' + receipt.staff + '</p>';
+    }
+    html += '</div>';
+    
+    html += '<div style="border-top:1px solid #ccc;padding-top:0.75rem;margin-bottom:0.75rem;font-size:0.9rem;">';
+    html += '<p style="margin:0.25rem 0;display:flex;justify-content:space-between;"><span>Balance Before:</span><span style="color:#dc2626;">₦' + receipt.balance_before.toFixed(2) + '</span></p>';
+    html += '<p style="margin:0.5rem 0;display:flex;justify-content:space-between;font-weight:700;font-size:1rem;background:#f0fdf4;padding:0.5rem;border-radius:6px;"><span>Payment Amount:</span><span style="color:#16a34a;">₦' + receipt.payment_amount.toFixed(2) + '</span></p>';
+    if (receipt.transfer_amount > 0) {
+        html += '<p style="margin:0.25rem 0;display:flex;justify-content:space-between;padding-left:1rem;font-size:0.85rem;"><span>- Transfer (' + receipt.bank_name + '):</span><span>₦' + receipt.transfer_amount.toFixed(2) + '</span></p>';
+    }
+    if (receipt.cash_amount > 0) {
+        html += '<p style="margin:0.25rem 0;display:flex;justify-content:space-between;padding-left:1rem;font-size:0.85rem;"><span>- Cash:</span><span>₦' + receipt.cash_amount.toFixed(2) + '</span></p>';
+    }
+    if (receipt.home_amount > 0) {
+        html += '<p style="margin:0.25rem 0;display:flex;justify-content:space-between;padding-left:1rem;font-size:0.85rem;"><span>- Home Calculation:</span><span>₦' + receipt.home_amount.toFixed(2) + '</span></p>';
+    }
+    html += '</div>';
+    
+    html += '<div style="background:' + (receipt.new_balance > 0 ? '#fef2f2' : '#f0fdf4') + ';padding:0.75rem;border-radius:8px;margin-bottom:0.75rem;">';
+    html += '<p style="margin:0;display:flex;justify-content:space-between;font-weight:700;color:' + (receipt.new_balance > 0 ? '#dc2626' : '#16a34a') + ';font-size:1.1rem;"><span>New Balance:</span><span>₦' + receipt.new_balance.toFixed(2) + '</span></p>';
+    html += '</div>';
+    
+    html += '<div style="text-align:center;padding-top:0.75rem;border-top:2px dashed #ccc;">';
+    html += '<p style="margin:0;color:#16a34a;font-weight:600;font-size:0.85rem;">Payment Received with Thanks!</p>';
+    html += '<p style="margin:0.5rem 0 0 0;color:#dc2626;font-weight:600;font-size:0.8rem;"><i class="fas fa-wifi"></i> Submitted Offline</p>';
+    html += '<p style="margin:0.25rem 0 0 0;color:#666;font-size:0.75rem;">Will sync when back online</p>';
+    html += '<p style="margin:0.5rem 0 0 0;color:#666;font-size:0.7rem;">Powered by BendlessTech</p>';
+    html += '</div>';
+    html += '</div>';
+    
+    return html;
+}
+
+function closePaymentOfflineReceipt() {
+    var modal = document.getElementById('payment-offline-receipt-modal');
+    if (modal) modal.remove();
+    // Redirect to debtors list
+    window.location.href = '<?php echo esc_url(remove_query_arg(array('debtor','action'))); ?>';
+}
+
+function printPaymentOfflineReceipt() {
+    var printArea = document.getElementById('payment-offline-receipt-print-area');
+    if (!printArea) return;
+    
+    var w = window.open('', '_blank', 'width=400,height=600');
+    w.document.write('<!DOCTYPE html><html><head><title>Print Receipt</title>');
+    w.document.write('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">');
+    w.document.write('<style>@page{size:80mm auto;margin:0}body{margin:0;padding:0;font-family:Arial,sans-serif;}</style>');
+    w.document.write('</head><body>');
+    w.document.write(printArea.innerHTML);
+    w.document.write('</body></html>');
+    w.document.close();
+    w.onload = function() { setTimeout(function() { w.print(); }, 300); };
+}
 </script>
 <?php endif; ?>
 </div>
