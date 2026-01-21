@@ -792,12 +792,7 @@ function sendOrderReceipt(){
         alert('Unable to build receipt message');
         return;
     }
-    var phone = '<?php echo esc_js($debtor->phone ?? ''); ?>';
-    if (!phone) {
-        alert('No phone number found for this debtor.');
-        return;
-    }
-    sendOrderReceiptWithFallback('order-print-area', receiptText, phone);
+    shareOrderReceiptImage('order-print-area', receiptText);
 }
 
 function buildOrderReceiptText(){
@@ -814,52 +809,45 @@ function buildOrderReceiptText(){
     return lines.join('\n');
 }
 
-function sendOrderReceiptWithFallback(elementId, receiptText, phone){
+function shareOrderReceiptImage(elementId, receiptText){
     var receiptNode = document.getElementById(elementId);
     if (!receiptNode) {
         alert('Receipt image not available.');
         return;
     }
-    var normalizedPhone = phone.replace(/[^0-9]/g, '');
-    var baseUrl = normalizedPhone ? 'https://wa.me/' + normalizedPhone : 'https://wa.me/';
-    var placeholderText = receiptText + '\n\nPreparing receipt image...';
-    var shareWindow = window.open(baseUrl + '?text=' + encodeURIComponent(placeholderText), '_blank');
     html2canvas(receiptNode, { backgroundColor: '#ffffff', scale: 2 }).then(function(canvas) {
         canvas.toBlob(function(blob) {
             if (!blob) {
                 alert('Receipt image could not be created.');
-                if (shareWindow) {
-                    shareWindow.close();
-                }
                 return;
             }
-            var file = new File([blob], 'receipt.png', { type: 'image/png' });
+            var file = new File([blob], 'chinemerem-foods-receipt.png', { type: 'image/png' });
             if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
                 navigator.share({
-                    title: 'Receipt',
+                    title: 'Chinemerem Foods Receipt',
                     text: receiptText,
                     files: [file]
                 }).catch(function(error){
-                    console.warn('Share cancelled', error);
+                    console.warn('Share cancelled or failed', error);
+                    // Fallback: download the image
+                    downloadReceiptImage(canvas, 'chinemerem-foods-order-receipt.png');
                 });
-                if (shareWindow) {
-                    shareWindow.close();
-                }
-                return;
+            } else {
+                // Fallback for browsers without Web Share API: download the image
+                downloadReceiptImage(canvas, 'chinemerem-foods-order-receipt.png');
             }
-            var reader = new FileReader();
-            reader.onloadend = function() {
-                var message = receiptText + '\n\nReceipt image (tap to download): ' + reader.result;
-                var url = baseUrl + '?text=' + encodeURIComponent(message);
-                if (shareWindow) {
-                    shareWindow.location.href = url;
-                } else {
-                    window.open(url, '_blank');
-                }
-            };
-            reader.readAsDataURL(blob);
-        });
+        }, 'image/png');
+    }).catch(function(error){
+        console.error('Failed to capture receipt:', error);
+        alert('Failed to capture receipt image. Please try again.');
     });
+}
+
+function downloadReceiptImage(canvas, filename) {
+    var link = document.createElement('a');
+    link.download = filename;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
 }
 </script>
 <?php endif; ?>
@@ -1008,69 +996,48 @@ function sendPayReceipt(){
         alert('Unable to build receipt message');
         return;
     }
-    if (!window.cfiDebtorHasPhone) {
-        alert('No phone number found for this debtor.');
-        return;
-    }
-    sendReceiptWithFallback('pay-print-area', receiptText, false);
+    sharePaymentReceiptImage('pay-print-area', receiptText);
 }
 
-function openWhatsappWithReceipt(dataUrl, receiptText){
-    var phone = '<?php echo esc_js($debtor->phone ?? ''); ?>';
-    var normalizedPhone = phone.replace(/[^0-9]/g, '');
-    var baseUrl = normalizedPhone ? 'https://wa.me/' + normalizedPhone : 'https://wa.me/';
-    var message = receiptText + '\\n\\nReceipt image (tap to download): ' + dataUrl;
-    var url = baseUrl + '?text=' + encodeURIComponent(message);
-    window.open(url, '_blank');
-}
-
-function sendReceiptWithFallback(elementId, receiptText, autoRedirect){
+function sharePaymentReceiptImage(elementId, receiptText){
     var receiptNode = document.getElementById(elementId);
     if (!receiptNode) {
         alert('Receipt image not available.');
         return;
     }
-    var phone = '<?php echo esc_js($debtor->phone ?? ''); ?>';
-    var normalizedPhone = phone.replace(/[^0-9]/g, '');
-    var baseUrl = normalizedPhone ? 'https://wa.me/' + normalizedPhone : 'https://wa.me/';
-    var placeholderText = receiptText + '\\n\\nPreparing receipt image...';
-    var shareWindow = autoRedirect ? window.open(baseUrl + '?text=' + encodeURIComponent(placeholderText), '_blank') : null;
     html2canvas(receiptNode, { backgroundColor: '#ffffff', scale: 2 }).then(function(canvas) {
         canvas.toBlob(function(blob) {
             if (!blob) {
                 alert('Receipt image could not be created.');
-                if (shareWindow) {
-                    shareWindow.close();
-                }
                 return;
             }
-            var file = new File([blob], 'receipt.png', { type: 'image/png' });
+            var file = new File([blob], 'chinemerem-foods-receipt.png', { type: 'image/png' });
             if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
                 navigator.share({
-                    title: 'Receipt',
+                    title: 'Chinemerem Foods Receipt',
                     text: receiptText,
                     files: [file]
                 }).catch(function(error){
-                    console.warn('Share cancelled', error);
+                    console.warn('Share cancelled or failed', error);
+                    // Fallback: download the image
+                    downloadPaymentReceiptImage(canvas, 'chinemerem-foods-payment-receipt.png');
                 });
-                if (shareWindow) {
-                    shareWindow.close();
-                }
-                return;
+            } else {
+                // Fallback for browsers without Web Share API: download the image
+                downloadPaymentReceiptImage(canvas, 'chinemerem-foods-payment-receipt.png');
             }
-            var reader = new FileReader();
-            reader.onloadend = function() {
-                var message = receiptText + '\\n\\nReceipt image (tap to download): ' + reader.result;
-                var url = baseUrl + '?text=' + encodeURIComponent(message);
-                if (shareWindow) {
-                    shareWindow.location.href = url;
-                } else {
-                    window.open(url, '_blank');
-                }
-            };
-            reader.readAsDataURL(blob);
-        });
+        }, 'image/png');
+    }).catch(function(error){
+        console.error('Failed to capture receipt:', error);
+        alert('Failed to capture receipt image. Please try again.');
     });
+}
+
+function downloadPaymentReceiptImage(canvas, filename) {
+    var link = document.createElement('a');
+    link.download = filename;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
 }
 
 function buildPaymentReceiptText(){
