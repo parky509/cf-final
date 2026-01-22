@@ -1517,7 +1517,7 @@ function shareOrderReceiptImage(elementId, receiptText){
         alert('Receipt image not available.');
         return;
     }
-    html2canvas(receiptNode, { backgroundColor: '#ffffff', scale: 2 }).then(function(canvas) {
+    html2canvas(receiptNode, { backgroundColor: '#ffffff', scale: 1.5, logging: false }).then(function(canvas) {
         canvas.toBlob(function(blob) {
             if (!blob) {
                 alert('Receipt image could not be created.');
@@ -1729,7 +1729,7 @@ function sharePaymentReceiptImage(elementId, receiptText){
         alert('Receipt image not available.');
         return;
     }
-    html2canvas(receiptNode, { backgroundColor: '#ffffff', scale: 2 }).then(function(canvas) {
+    html2canvas(receiptNode, { backgroundColor: '#ffffff', scale: 1.5, logging: false }).then(function(canvas) {
         canvas.toBlob(function(blob) {
             if (!blob) {
                 alert('Receipt image could not be created.');

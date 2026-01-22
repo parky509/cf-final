@@ -716,17 +716,25 @@ document.getElementById('order-modal').addEventListener('click',function(e){if(e
 // Prevent form resubmission on back button - but do NOT auto-reload
 if(window.history.replaceState)window.history.replaceState(null,null,window.location.href);
 
-// Load html2canvas for receipt sharing
+// Load html2canvas immediately for instant sharing
+var html2canvasReady = false;
 (function() {
     if (!window.html2canvas) {
         var script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+        script.onload = function() { html2canvasReady = true; };
         document.head.appendChild(script);
+    } else {
+        html2canvasReady = true;
     }
 })();
 
-// Send Order Receipt via Web Share API
+// Send Order Receipt via Web Share API - instant response
 function sendOrderReceipt(id) {
+    if (!html2canvasReady) {
+        alert('Please wait a moment and try again');
+        return;
+    }
     fetch('<?php echo admin_url('admin-ajax.php'); ?>?action=cfi_get_order_details&order_id='+id)
     .then(function(r){return r.json()})
     .then(function(d){
@@ -790,48 +798,42 @@ function shareOrderReceiptImage(o) {
     receiptDiv.innerHTML = html;
     document.body.appendChild(receiptDiv);
     
-    // Wait for html2canvas to be loaded
-    var waitForHtml2Canvas = function(callback) {
-        if (window.html2canvas) {
-            callback();
-        } else {
-            setTimeout(function() { waitForHtml2Canvas(callback); }, 100);
-        }
-    };
-    
-    waitForHtml2Canvas(function() {
-        html2canvas(receiptDiv, { scale: 2, backgroundColor: '#ffffff' }).then(function(canvas) {
-            document.body.removeChild(receiptDiv);
-            canvas.toBlob(function(blob) {
-                var file = new File([blob], 'order-receipt-'+(o.order_number||'unknown')+'.png', { type: 'image/png' });
-                var receiptText = 'CHINEMEREM FOODS - Credit Order\n';
-                receiptText += 'Order: '+(o.order_number||'N/A')+'\n';
-                receiptText += 'Customer: '+(o.customer_name||'N/A')+'\n';
-                receiptText += 'Total: ₦'+formatReceiptNumber(o.grand_total||0);
-                
-                if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-                    navigator.share({
-                        title: 'Order Receipt - '+(o.order_number||''),
-                        text: receiptText,
-                        files: [file]
-                    }).catch(function(err) {
-                        if (err.name !== 'AbortError') {
-                            downloadReceiptBlob(blob, 'order-receipt-'+(o.order_number||'unknown')+'.png');
-                        }
-                    });
-                } else {
-                    downloadReceiptBlob(blob, 'order-receipt-'+(o.order_number||'unknown')+'.png');
-                }
-            }, 'image/png');
-        }).catch(function(err) {
-            document.body.removeChild(receiptDiv);
-            alert('Failed to generate receipt image');
-        });
+    // Immediate capture - no delay
+    html2canvas(receiptDiv, { scale: 1.5, backgroundColor: '#ffffff', logging: false }).then(function(canvas) {
+        document.body.removeChild(receiptDiv);
+        canvas.toBlob(function(blob) {
+            var file = new File([blob], 'order-receipt-'+(o.order_number||'unknown')+'.png', { type: 'image/png' });
+            var receiptText = 'CHINEMEREM FOODS - Credit Order\n';
+            receiptText += 'Order: '+(o.order_number||'N/A')+'\n';
+            receiptText += 'Customer: '+(o.customer_name||'N/A')+'\n';
+            receiptText += 'Total: ₦'+formatReceiptNumber(o.grand_total||0);
+            
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                navigator.share({
+                    title: 'Order Receipt - '+(o.order_number||''),
+                    text: receiptText,
+                    files: [file]
+                }).catch(function(err) {
+                    if (err.name !== 'AbortError') {
+                        downloadReceiptBlob(blob, 'order-receipt-'+(o.order_number||'unknown')+'.png');
+                    }
+                });
+            } else {
+                downloadReceiptBlob(blob, 'order-receipt-'+(o.order_number||'unknown')+'.png');
+            }
+        }, 'image/png');
+    }).catch(function(err) {
+        document.body.removeChild(receiptDiv);
+        alert('Failed to generate receipt image');
     });
 }
 
-// Send Payment Receipt via Web Share API
+// Send Payment Receipt via Web Share API - instant response
 function sendPayReceipt(id) {
+    if (!html2canvasReady) {
+        alert('Please wait a moment and try again');
+        return;
+    }
     var p = payData[id];
     if (!p) {
         alert('Payment not found');
@@ -883,44 +885,34 @@ function sharePayReceiptImage(p) {
     receiptDiv.innerHTML = html;
     document.body.appendChild(receiptDiv);
     
-    // Wait for html2canvas to be loaded
-    var waitForHtml2Canvas = function(callback) {
-        if (window.html2canvas) {
-            callback();
-        } else {
-            setTimeout(function() { waitForHtml2Canvas(callback); }, 100);
-        }
-    };
-    
-    waitForHtml2Canvas(function() {
-        html2canvas(receiptDiv, { scale: 2, backgroundColor: '#ffffff' }).then(function(canvas) {
-            document.body.removeChild(receiptDiv);
-            canvas.toBlob(function(blob) {
-                var file = new File([blob], 'payment-receipt-PAY-'+p.id+'.png', { type: 'image/png' });
-                var receiptText = 'CHINEMEREM FOODS - Payment Receipt\n';
-                receiptText += 'Receipt: PAY-'+p.id+'\n';
-                receiptText += 'Debtor: '+(p.debtor_name||'')+'\n';
-                receiptText += 'Payment: ₦'+formatReceiptNumber(p.amount)+'\n';
-                receiptText += 'New Balance: ₦'+formatReceiptNumber(p.balance_after);
-                
-                if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-                    navigator.share({
-                        title: 'Payment Receipt - PAY-'+p.id,
-                        text: receiptText,
-                        files: [file]
-                    }).catch(function(err) {
-                        if (err.name !== 'AbortError') {
-                            downloadReceiptBlob(blob, 'payment-receipt-PAY-'+p.id+'.png');
-                        }
-                    });
-                } else {
-                    downloadReceiptBlob(blob, 'payment-receipt-PAY-'+p.id+'.png');
-                }
-            }, 'image/png');
-        }).catch(function(err) {
-            document.body.removeChild(receiptDiv);
-            alert('Failed to generate receipt image');
-        });
+    // Immediate capture - no delay
+    html2canvas(receiptDiv, { scale: 1.5, backgroundColor: '#ffffff', logging: false }).then(function(canvas) {
+        document.body.removeChild(receiptDiv);
+        canvas.toBlob(function(blob) {
+            var file = new File([blob], 'payment-receipt-PAY-'+p.id+'.png', { type: 'image/png' });
+            var receiptText = 'CHINEMEREM FOODS - Payment Receipt\n';
+            receiptText += 'Receipt: PAY-'+p.id+'\n';
+            receiptText += 'Debtor: '+(p.debtor_name||'')+'\n';
+            receiptText += 'Payment: ₦'+formatReceiptNumber(p.amount)+'\n';
+            receiptText += 'New Balance: ₦'+formatReceiptNumber(p.balance_after);
+            
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                navigator.share({
+                    title: 'Payment Receipt - PAY-'+p.id,
+                    text: receiptText,
+                    files: [file]
+                }).catch(function(err) {
+                    if (err.name !== 'AbortError') {
+                        downloadReceiptBlob(blob, 'payment-receipt-PAY-'+p.id+'.png');
+                    }
+                });
+            } else {
+                downloadReceiptBlob(blob, 'payment-receipt-PAY-'+p.id+'.png');
+            }
+        }, 'image/png');
+    }).catch(function(err) {
+        document.body.removeChild(receiptDiv);
+        alert('Failed to generate receipt image');
     });
 }
 
