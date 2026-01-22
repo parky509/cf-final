@@ -736,14 +736,14 @@ function sendOrderReceipt(id) {
 }
 
 function buildOrderShareText(o) {
-    var text = '📋 *CHINEMEREM FOODS*\n';
+    var text = '*CHINEMEREM FOODS*\n';
     text += '━━━━━━━━━━━━━━━━━━\n';
     text += '*CREDIT ORDER RECEIPT*\n';
     text += '━━━━━━━━━━━━━━━━━━\n\n';
-    text += '🔖 Order: *' + (o.order_number||'N/A') + '*\n';
-    text += '📅 Date: ' + (o.order_date||'N/A') + '\n';
-    text += '🕐 Time: ' + (o.order_time||'N/A') + '\n';
-    text += '👤 Customer: *' + (o.customer_name||'N/A') + '*\n';
+    text += 'Order: *' + (o.order_number||'N/A') + '*\n';
+    text += 'Date: ' + (o.order_date||'N/A') + '\n';
+    text += 'Time: ' + (o.order_time||'N/A') + '\n';
+    text += 'Customer: *' + (o.customer_name||'N/A') + '*\n';
     text += '━━━━━━━━━━━━━━━━━━\n\n';
     text += '*ITEMS ORDERED:*\n';
     var totalDiscount = 0;
@@ -759,9 +759,9 @@ function buildOrderShareText(o) {
     }
     text += '\n━━━━━━━━━━━━━━━━━━\n';
     text += 'Total Discount: -₦' + formatReceiptNumber(totalDiscount) + '\n';
-    text += '*💰 ORDER TOTAL: ₦' + formatReceiptNumber(o.grand_total||0) + '*\n';
+    text += '*ORDER TOTAL: ₦' + formatReceiptNumber(o.grand_total||0) + '*\n';
     text += '━━━━━━━━━━━━━━━━━━\n\n';
-    text += '⚠️ *CREDIT ORDER - PAYMENT PENDING*\n\n';
+    text += '*CREDIT ORDER - PAYMENT PENDING*\n\n';
     text += '_Thank you for your patronage!_\n';
     text += '_Powered by BendlessTech_';
     return text;
@@ -800,18 +800,18 @@ function sendPayReceipt(id) {
 }
 
 function buildPaymentShareText(p) {
-    var text = '📋 *CHINEMEREM FOODS*\n';
+    var text = '*CHINEMEREM FOODS*\n';
     text += '━━━━━━━━━━━━━━━━━━\n';
     text += '*DEBT PAYMENT RECEIPT*\n';
     text += '━━━━━━━━━━━━━━━━━━\n\n';
-    text += '🔖 Receipt: *PAY-' + p.id + '*\n';
-    text += '📅 Date: ' + p.transaction_date + '\n';
-    text += '🕐 Time: ' + p.transaction_time + '\n';
-    text += '👤 Debtor: *' + (p.debtor_name||'') + '*\n';
+    text += 'Receipt: *PAY-' + p.id + '*\n';
+    text += 'Date: ' + p.transaction_date + '\n';
+    text += 'Time: ' + p.transaction_time + '\n';
+    text += 'Debtor: *' + (p.debtor_name||'') + '*\n';
     text += '━━━━━━━━━━━━━━━━━━\n\n';
     text += '*PAYMENT DETAILS:*\n';
     text += 'Balance Before: ₦' + formatReceiptNumber(p.balance_before) + '\n';
-    text += '*💰 PAYMENT: ₦' + formatReceiptNumber(p.amount) + '*\n';
+    text += '*PAYMENT: ₦' + formatReceiptNumber(p.amount) + '*\n';
     if(parseFloat(p.transfer_amount) > 0) {
         text += '   Via Transfer: ₦' + formatReceiptNumber(p.transfer_amount) + '\n';
     }
@@ -819,10 +819,10 @@ function buildPaymentShareText(p) {
         text += '   Via Cash: ₦' + formatReceiptNumber(p.cash_amount) + '\n';
     }
     text += '\n━━━━━━━━━━━━━━━━━━\n';
-    var balColor = parseFloat(p.balance_after) > 0 ? '🔴' : '🟢';
-    text += balColor + ' *NEW BALANCE: ₦' + formatReceiptNumber(p.balance_after) + '*\n';
-    if(parseFloat(p.balance_after) < 0) {
-        text += '✅ Overpayment Credit: ₦' + formatReceiptNumber(Math.abs(p.balance_after)) + '\n';
+    var balanceAfter = parseFloat(p.balance_after) || 0;
+    text += '*NEW BALANCE: ₦' + formatReceiptNumber(p.balance_after) + '*\n';
+    if(balanceAfter < 0) {
+        text += 'Overpayment Credit: ₦' + formatReceiptNumber(Math.abs(balanceAfter)) + '\n';
     }
     text += '━━━━━━━━━━━━━━━━━━\n\n';
     text += '_Payment received with thanks!_\n';
