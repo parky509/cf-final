@@ -181,7 +181,7 @@ table td:before{content:attr(data-label);font-weight:600;color:#001943}
 <?php else : ?>
 <div style="overflow-x:auto">
 <table>
-<thead><tr><th>Date</th><th>Time</th><th>Debtor</th><th>Type</th><th>Amount</th><th>Before</th><th>After</th><th>Order Details</th><th>Payment Details</th><th>Staff</th><?php if ($is_super_admin) : ?><th>Action</th><?php endif; ?></tr></thead>
+<thead><tr><th>Date</th><th>Time</th><th>Debtor</th><th>Type</th><th>Amount</th><th>Before</th><th>After</th><th>Order</th><th>Payment</th><th>Send</th><th>Staff</th><?php if ($is_super_admin) : ?><th>Action</th><?php endif; ?></tr></thead>
 <tbody>
 <?php foreach ($history as $rec) : 
 $type = $rec->transaction_type;
@@ -196,18 +196,23 @@ $icon = $type === 'order' ? 'cart-plus' : ($type === 'payment' ? 'money-check' :
 <td data-label="Amount" style="font-weight:600;color:<?php echo $type === 'order' ? '#dc2626' : '#16a34a'; ?>"><?php echo $type === 'order' ? '+' : '-'; ?>₦<?php echo number_format((float)$rec->amount, 2); ?></td>
 <td data-label="Before">₦<?php echo number_format((float)$rec->balance_before, 2); ?></td>
 <td data-label="After" style="font-weight:600">₦<?php echo number_format((float)$rec->balance_after, 2); ?></td>
-<td data-label="Order Details">
+<td data-label="Order">
 <?php if ($type === 'order' && $rec->order_id) : ?>
 <button type="button" class="action-btn btn-view" onclick="viewOrder(<?php echo esc_attr($rec->order_id); ?>)"><i class="fas fa-eye"></i></button>
 <button type="button" class="action-btn btn-print" onclick="reprintOrder(<?php echo esc_attr($rec->order_id); ?>)"><i class="fas fa-print"></i></button>
-<button type="button" class="action-btn btn-send" onclick="sendOrderReceipt(<?php echo esc_attr($rec->order_id); ?>)"><i class="fab fa-whatsapp"></i></button>
 <?php else : ?>-<?php endif; ?>
 </td>
-<td data-label="Payment Details">
+<td data-label="Payment">
 <?php if ($type === 'payment') : ?>
 <button type="button" class="action-btn btn-view" onclick="viewPayment(<?php echo esc_attr($rec->id); ?>)"><i class="fas fa-eye"></i></button>
 <button type="button" class="action-btn btn-print" onclick="reprintPay(<?php echo esc_attr($rec->id); ?>)"><i class="fas fa-print"></i></button>
-<button type="button" class="action-btn btn-send" onclick="sendPayReceipt(<?php echo esc_attr($rec->id); ?>)"><i class="fab fa-whatsapp"></i></button>
+<?php else : ?>-<?php endif; ?>
+</td>
+<td data-label="Send">
+<?php if ($type === 'order' && $rec->order_id) : ?>
+<button type="button" class="action-btn btn-send" onclick="sendOrderReceipt(<?php echo esc_attr($rec->order_id); ?>)" title="Share via WhatsApp"><i class="fab fa-whatsapp"></i></button>
+<?php elseif ($type === 'payment') : ?>
+<button type="button" class="action-btn btn-send" onclick="sendPayReceipt(<?php echo esc_attr($rec->id); ?>)" title="Share via WhatsApp"><i class="fab fa-whatsapp"></i></button>
 <?php else : ?>-<?php endif; ?>
 </td>
 <td data-label="Staff"><?php echo esc_html($rec->staff_name ?: '-'); ?></td>
