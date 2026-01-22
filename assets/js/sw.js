@@ -3,7 +3,7 @@
  * Aggressive caching for blazing fast load times
  */
 
-const CACHE_NAME = 'cfi-cache-v12';
+const CACHE_NAME = 'cfi-cache-v13';
 const OFFLINE_URL = '/offline.html';
 
 // Static assets to cache immediately

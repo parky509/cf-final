@@ -808,14 +808,22 @@ function shareOrderReceiptImage(o) {
             receiptText += 'Customer: '+(o.customer_name||'N/A')+'\n';
             receiptText += 'Total: ₦'+formatReceiptNumber(o.grand_total||0);
             
-            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+            // Always try Web Share API first - most mobile devices support it
+            if (navigator.share) {
                 navigator.share({
                     title: 'Order Receipt - '+(o.order_number||''),
                     text: receiptText,
                     files: [file]
                 }).catch(function(err) {
+                    // Only download if share was not just cancelled by user
                     if (err.name !== 'AbortError') {
-                        downloadReceiptBlob(blob, 'order-receipt-'+(o.order_number||'unknown')+'.png');
+                        // Try sharing without file as fallback
+                        navigator.share({
+                            title: 'Order Receipt - '+(o.order_number||''),
+                            text: receiptText
+                        }).catch(function() {
+                            downloadReceiptBlob(blob, 'order-receipt-'+(o.order_number||'unknown')+'.png');
+                        });
                     }
                 });
             } else {
@@ -896,14 +904,22 @@ function sharePayReceiptImage(p) {
             receiptText += 'Payment: ₦'+formatReceiptNumber(p.amount)+'\n';
             receiptText += 'New Balance: ₦'+formatReceiptNumber(p.balance_after);
             
-            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+            // Always try Web Share API first - most mobile devices support it
+            if (navigator.share) {
                 navigator.share({
                     title: 'Payment Receipt - PAY-'+p.id,
                     text: receiptText,
                     files: [file]
                 }).catch(function(err) {
+                    // Only download if share was not just cancelled by user
                     if (err.name !== 'AbortError') {
-                        downloadReceiptBlob(blob, 'payment-receipt-PAY-'+p.id+'.png');
+                        // Try sharing without file as fallback
+                        navigator.share({
+                            title: 'Payment Receipt - PAY-'+p.id,
+                            text: receiptText
+                        }).catch(function() {
+                            downloadReceiptBlob(blob, 'payment-receipt-PAY-'+p.id+'.png');
+                        });
                     }
                 });
             } else {
