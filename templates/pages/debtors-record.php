@@ -308,12 +308,16 @@ if (isset($_POST['cfi_clear_debt_submit']) && wp_verify_nonce($_POST['cfi_clear_
 // Load receipt data from transients after redirect
 $order_receipt = null;
 $payment_receipt = null;
+$show_order_success = false;
+$show_payment_success = false;
 
 if (isset($_GET['order_done']) && isset($_GET['rk'])) {
     $order_receipt = get_transient($_GET['rk']);
     if ($order_receipt) {
         delete_transient($_GET['rk']);
     }
+    // Mark order as successful even if transient is gone
+    $show_order_success = true;
 }
 
 if (isset($_GET['pay_done']) && isset($_GET['pk'])) {
@@ -321,6 +325,8 @@ if (isset($_GET['pay_done']) && isset($_GET['pk'])) {
     if ($payment_receipt) {
         delete_transient($_GET['pk']);
     }
+    // Mark payment as successful even if transient is gone
+    $show_payment_success = true;
 }
 
 if (!function_exists('cfi_format_receipt_value')) {
@@ -473,6 +479,26 @@ table input{width:50px}
 <a href="<?php echo esc_url(home_url('/debtors-history/')); ?>" class="btn btn-white"><i class="fas fa-history"></i> View History</a>
 <?php endif; ?>
 </div>
+
+<?php if ($show_order_success && !$order_receipt) : ?>
+<div style="background:#dcfce7;color:#166534;padding:1rem;border-radius:8px;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
+<i class="fas fa-check-circle" style="font-size:1.5rem;"></i>
+<div>
+<strong>Order Recorded Successfully!</strong>
+<p style="margin:0.25rem 0 0 0;font-size:0.875rem;">The credit order has been added to the debtor's account.</p>
+</div>
+</div>
+<?php endif; ?>
+
+<?php if ($show_payment_success && !$payment_receipt) : ?>
+<div style="background:#dcfce7;color:#166534;padding:1rem;border-radius:8px;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
+<i class="fas fa-check-circle" style="font-size:1.5rem;"></i>
+<div>
+<strong>Payment Recorded Successfully!</strong>
+<p style="margin:0.25rem 0 0 0;font-size:0.875rem;">The debt payment has been recorded.</p>
+</div>
+</div>
+<?php endif; ?>
 
 <?php if ($selected_debtor && $action === 'order') : ?>
 <div class="glass">
@@ -1318,6 +1344,14 @@ function downloadReceiptImage(canvas, filename) {
     link.href = canvas.toDataURL('image/png');
     link.click();
 }
+
+// Ensure order modal is visible on page load
+document.addEventListener('DOMContentLoaded', function() {
+    var orderModal = document.getElementById('order-modal');
+    if (orderModal) {
+        orderModal.style.display = 'flex';
+    }
+});
 </script>
 <?php endif; ?>
 
@@ -1536,6 +1570,14 @@ function buildPaymentReceiptText(){
     return lines.join('\\n');
 }
 function closePayModal(){document.getElementById('pay-modal').style.display='none';window.location.href='<?php echo esc_url($debtor_record_done_url); ?>'}
+
+// Ensure payment modal is visible on page load
+document.addEventListener('DOMContentLoaded', function() {
+    var payModal = document.getElementById('pay-modal');
+    if (payModal) {
+        payModal.style.display = 'flex';
+    }
+});
 </script>
 <?php endif; ?>
 
