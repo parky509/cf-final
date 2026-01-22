@@ -691,6 +691,9 @@ function showDebtorOfflineReceipt(receipt, type) {
     var modal = document.createElement('div');
     modal.id = 'debtor-offline-receipt-modal';
     modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:99998;padding:1rem;box-sizing:border-box;';
+    // Store receipt data for printing
+    modal.dataset.receipt = JSON.stringify(receipt);
+    modal.dataset.receiptType = type;
     
     var content = buildDebtorOfflineReceiptContent(receipt, type);
     
@@ -791,18 +794,105 @@ function closeDebtorOfflineReceipt() {
 }
 
 function printDebtorOfflineReceipt() {
-    var printArea = document.getElementById('debtor-offline-receipt-print-area');
-    if (!printArea) return;
+    var modal = document.getElementById('debtor-offline-receipt-modal');
+    if (!modal || !modal.dataset.receipt) return;
     
-    var w = window.open('', '_blank', 'width=400,height=600');
-    w.document.write('<!DOCTYPE html><html><head><title>Print Receipt</title>');
-    w.document.write('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">');
-    w.document.write('<style>@page{size:80mm auto;margin:0}body{margin:0;padding:0;font-family:Arial,sans-serif;}</style>');
-    w.document.write('</head><body>');
-    w.document.write(printArea.innerHTML);
-    w.document.write('</body></html>');
-    w.document.close();
-    w.onload = function() { setTimeout(function() { w.print(); }, 300); };
+    try {
+        var receipt = JSON.parse(modal.dataset.receipt);
+        var type = modal.dataset.receiptType || 'order';
+        
+        var w = window.open('', '_blank', 'width=350,height=700');
+        var h = '<!DOCTYPE html><html><head><title>Print Receipt</title>';
+        h += '<style>';
+        h += '@page{size:80mm auto;margin:0}';
+        h += '*{margin:0;padding:0;box-sizing:border-box}';
+        h += 'html,body{width:100%!important;max-width:100%!important;margin:0!important;padding:0!important}';
+        h += 'body{font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.3;color:#000;background:#fff}';
+        h += '.receipt{width:100%;padding:3mm}';
+        h += '.header{text-align:center;padding:10px 0;border-bottom:3px double #000;margin-bottom:12px}';
+        h += '.header h2{font-size:20px;font-weight:900;margin:0 0 5px;text-transform:uppercase}';
+        h += '.header p{font-size:14px;margin:0;font-weight:700;color:#c00}';
+        h += '.info{margin:10px 0;padding:10px 0;border-bottom:2px solid #000}';
+        h += '.info-row{display:flex;justify-content:space-between;margin:6px 0;font-size:12px}';
+        h += '.info-row .label{font-weight:600}';
+        h += '.info-row .value{font-weight:900}';
+        h += '.items-table{width:100%;margin:10px 0;border-collapse:collapse;font-size:12px;table-layout:fixed;border:2px solid #000}';
+        h += '.items-table th{background:#000;color:#fff;padding:8px 4px;font-size:11px;font-weight:900;text-align:center;border:2px solid #000}';
+        h += '.items-table th:first-child{text-align:left;width:44%}';
+        h += '.items-table th:nth-child(2){width:18%}';
+        h += '.items-table th:nth-child(3){width:12%}';
+        h += '.items-table th:nth-child(4){width:26%}';
+        h += '.items-table td{padding:8px 4px;border:2px solid #000;vertical-align:middle;font-size:11px}';
+        h += '.items-table td:first-child{text-align:left;font-weight:600}';
+        h += '.items-table td:nth-child(2){text-align:right}';
+        h += '.items-table td:nth-child(3){text-align:center}';
+        h += '.items-table td:nth-child(4){text-align:right;font-weight:900;font-size:12px}';
+        h += '.items-table .discount-row td{font-style:italic;background:#f5f5f5}';
+        h += '.items-table .discount-label{text-align:left}';
+        h += '.items-table .discount-value{text-align:right;color:#c00}';
+        h += '.totals{margin:12px 0;padding:10px 0;border-top:3px solid #000}';
+        h += '.total-row{display:flex;justify-content:space-between;margin:6px 0;font-size:14px;font-weight:900}';
+        h += '.grand-total{background:#000;color:#fff;padding:12px 8px;margin:10px 0;font-size:16px;font-weight:900;display:flex;justify-content:space-between}';
+        h += '.balance-row{display:flex;justify-content:space-between;margin:10px 0;font-size:15px;font-weight:900;color:#c00}';
+        h += '.credit-note{background:#ffe0e0;color:#c00;padding:10px;text-align:center;font-weight:900;margin:12px 0;border:3px solid #c00;font-size:13px}';
+        h += '.offline-note{background:#fff3cd;color:#856404;padding:8px;text-align:center;font-weight:700;margin:8px 0;border:2px solid #ffc107;font-size:11px}';
+        h += '.footer{text-align:center;margin-top:12px;padding-top:10px;border-top:2px dashed #000;font-size:11px}';
+        h += '.footer .thanks{font-weight:900;font-size:13px}';
+        h += '@media print{html,body{width:100%!important}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}';
+        h += '</style></head><body>';
+        h += '<div class="receipt">';
+        h += '<div class="header"><h2>CHINEMEREM FOODS</h2><p>*** CREDIT ORDER ***</p></div>';
+        h += '<div class="info">';
+        h += '<div class="info-row"><span class="label">Order No:</span><span class="value">' + receipt.order_number + '</span></div>';
+        h += '<div class="info-row"><span class="label">Date:</span><span class="value">' + receipt.date + '</span></div>';
+        h += '<div class="info-row"><span class="label">Time:</span><span class="value">' + receipt.time + '</span></div>';
+        h += '<div class="info-row"><span class="label">Debtor:</span><span class="value" style="color:#c00">' + receipt.debtor_name + '</span></div>';
+        if (receipt.staff) {
+            h += '<div class="info-row"><span class="label">Staff:</span><span class="value">' + receipt.staff + '</span></div>';
+        }
+        h += '</div>';
+        h += '<table class="items-table">';
+        h += '<tr><th>ITEM</th><th>PRICE</th><th>QTY</th><th>AMOUNT</th></tr>';
+        var totalDiscount = 0;
+        if (receipt.items && receipt.items.length > 0) {
+            receipt.items.forEach(function(item) {
+                var discountDisplay = item.discount > 0 ? '-₦' + item.discount.toFixed(2) : '-';
+                totalDiscount += item.discount || 0;
+                h += '<tr class="item-row">';
+                h += '<td>' + item.product_name + '</td>';
+                h += '<td>₦' + item.price.toFixed(2) + '</td>';
+                h += '<td>' + item.quantity + '</td>';
+                h += '<td>₦' + item.total.toFixed(2) + '</td>';
+                h += '</tr>';
+                h += '<tr class="discount-row"><td class="discount-label" colspan="3">Discount</td><td class="discount-value">' + discountDisplay + '</td></tr>';
+            });
+        }
+        h += '</table>';
+        h += '<div class="totals"><div class="total-row"><span>Total Discount:</span><span style="color:#c00">-₦' + totalDiscount.toFixed(2) + '</span></div></div>';
+        h += '<div class="grand-total"><span>ORDER TOTAL:</span><span>₦' + receipt.grand_total.toFixed(2) + '</span></div>';
+        h += '<div class="balance-row"><span>NEW BALANCE:</span><span>₦' + receipt.new_balance.toFixed(2) + '</span></div>';
+        h += '<div class="credit-note">⚠ CREDIT ORDER - PAYMENT PENDING</div>';
+        h += '<div class="offline-note">📱 Submitted Offline - Will sync when online</div>';
+        h += '<div class="footer"><p class="thanks">Thank you for your patronage!</p><p style="margin-top:5px;font-size:9px">Powered by BendlessTech</p></div>';
+        h += '</div>';
+        h += '</body></html>';
+        w.document.write(h);
+        w.document.close();
+        w.onload = function() { setTimeout(function() { w.print(); }, 300); };
+    } catch(e) {
+        console.error('Error printing offline receipt:', e);
+        // Fallback to old method
+        var printArea = document.getElementById('debtor-offline-receipt-print-area');
+        if (!printArea) return;
+        var w = window.open('', '_blank', 'width=400,height=600');
+        w.document.write('<!DOCTYPE html><html><head><title>Print Receipt</title>');
+        w.document.write('<style>@page{size:80mm auto;margin:0}body{margin:0;padding:0;font-family:Arial,sans-serif;}</style>');
+        w.document.write('</head><body>');
+        w.document.write(printArea.innerHTML);
+        w.document.write('</body></html>');
+        w.document.close();
+        w.onload = function() { setTimeout(function() { w.print(); }, 300); };
+    }
 }
 </script>
 
@@ -996,6 +1086,8 @@ function showPaymentOfflineReceipt(receipt) {
     var modal = document.createElement('div');
     modal.id = 'payment-offline-receipt-modal';
     modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:99998;padding:1rem;box-sizing:border-box;';
+    // Store receipt data for printing
+    modal.dataset.receipt = JSON.stringify(receipt);
     
     var content = buildPaymentOfflineReceiptContent(receipt);
     
@@ -1068,18 +1160,84 @@ function closePaymentOfflineReceipt() {
 }
 
 function printPaymentOfflineReceipt() {
-    var printArea = document.getElementById('payment-offline-receipt-print-area');
-    if (!printArea) return;
+    var modal = document.getElementById('payment-offline-receipt-modal');
+    if (!modal || !modal.dataset.receipt) return;
     
-    var w = window.open('', '_blank', 'width=400,height=600');
-    w.document.write('<!DOCTYPE html><html><head><title>Print Receipt</title>');
-    w.document.write('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">');
-    w.document.write('<style>@page{size:80mm auto;margin:0}body{margin:0;padding:0;font-family:Arial,sans-serif;}</style>');
-    w.document.write('</head><body>');
-    w.document.write(printArea.innerHTML);
-    w.document.write('</body></html>');
-    w.document.close();
-    w.onload = function() { setTimeout(function() { w.print(); }, 300); };
+    try {
+        var receipt = JSON.parse(modal.dataset.receipt);
+        
+        var w = window.open('', '_blank', 'width=350,height=700');
+        var h = '<!DOCTYPE html><html><head><title>Print Receipt</title>';
+        h += '<style>';
+        h += '@page{size:80mm auto;margin:0}';
+        h += '*{margin:0;padding:0;box-sizing:border-box}';
+        h += 'html,body{width:100%!important;max-width:100%!important;margin:0!important;padding:0!important}';
+        h += 'body{font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.3;color:#000;background:#fff}';
+        h += '.receipt{width:100%;padding:3mm}';
+        h += '.header{text-align:center;padding:10px 0;border-bottom:3px double #000;margin-bottom:12px}';
+        h += '.header h2{font-size:20px;font-weight:900;margin:0 0 5px;text-transform:uppercase}';
+        h += '.header p{font-size:14px;margin:0;font-weight:700;color:#0f172a}';
+        h += '.info{margin:10px 0;padding:10px 0;border-bottom:2px solid #000}';
+        h += '.info p{display:flex;justify-content:space-between;margin:6px 0;font-size:12px}';
+        h += '.payment{margin:10px 0;padding:10px 0;border-bottom:2px solid #000}';
+        h += '.payment p{display:flex;justify-content:space-between;margin:6px 0;font-size:12px}';
+        h += '.payment .big{font-size:14px;font-weight:900;color:#008800}';
+        h += '.receipt-amount{font-weight:900}';
+        h += '.total{margin:12px 0;padding:10px 0;border-top:3px solid #000}';
+        h += '.total p{display:flex;justify-content:space-between;margin:6px 0;font-size:14px;font-weight:900}';
+        h += '.offline-note{background:#fff3cd;color:#856404;padding:8px;text-align:center;font-weight:700;margin:8px 0;border:2px solid #ffc107;font-size:11px}';
+        h += '.footer{text-align:center;margin-top:12px;padding-top:10px;border-top:2px dashed #000;font-size:11px}';
+        h += '.footer p{margin:4px 0}';
+        h += '@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}';
+        h += '</style></head><body>';
+        h += '<div class="receipt">';
+        h += '<div class="header"><h2>CHINEMEREM FOODS</h2><p>Debt Payment Receipt</p></div>';
+        h += '<div class="info">';
+        h += '<p><span>Receipt #:</span><span class="receipt-amount">' + receipt.order_number + '</span></p>';
+        h += '<p><span>Date:</span><span class="receipt-amount">' + receipt.date + '</span></p>';
+        h += '<p><span>Time:</span><span class="receipt-amount">' + receipt.time + '</span></p>';
+        h += '<p><span>Debtor:</span><span class="receipt-amount">' + receipt.debtor_name + '</span></p>';
+        if (receipt.staff) {
+            h += '<p><span>Staff:</span><span class="receipt-amount">' + receipt.staff + '</span></p>';
+        }
+        h += '</div>';
+        h += '<div class="payment">';
+        h += '<p><span>Balance Before:</span><span class="receipt-amount" style="color:#cc0000">N' + receipt.balance_before.toFixed(0) + '</span></p>';
+        h += '<p class="big"><span>PAYMENT AMOUNT:</span><span class="receipt-amount">N' + receipt.payment_amount.toFixed(0) + '</span></p>';
+        if (receipt.transfer_amount > 0) {
+            h += '<p><span>  - Via Transfer (' + receipt.bank_name + '):</span><span class="receipt-amount">N' + receipt.transfer_amount.toFixed(0) + '</span></p>';
+        }
+        if (receipt.cash_amount > 0) {
+            h += '<p><span>  - Via Cash:</span><span class="receipt-amount">N' + receipt.cash_amount.toFixed(0) + '</span></p>';
+        }
+        if (receipt.home_amount > 0) {
+            h += '<p><span>  - Home Calculation:</span><span class="receipt-amount">N' + receipt.home_amount.toFixed(0) + '</span></p>';
+        }
+        h += '</div>';
+        h += '<div class="total">';
+        var balColor = receipt.new_balance > 0 ? '#cc0000' : '#008800';
+        h += '<p style="color:' + balColor + '"><span>NEW BALANCE:</span><span class="receipt-amount">N' + receipt.new_balance.toFixed(0) + '</span></p>';
+        h += '</div>';
+        h += '<div class="offline-note">📱 Submitted Offline - Will sync when online</div>';
+        h += '<div class="footer"><p>Payment received with thanks!</p><p style="margin-top:5px">Powered by BendlessTech</p></div>';
+        h += '</div></body></html>';
+        w.document.write(h);
+        w.document.close();
+        w.onload = function() { setTimeout(function() { w.print(); }, 300); };
+    } catch(e) {
+        console.error('Error printing offline receipt:', e);
+        // Fallback to old method
+        var printArea = document.getElementById('payment-offline-receipt-print-area');
+        if (!printArea) return;
+        var w = window.open('', '_blank', 'width=400,height=600');
+        w.document.write('<!DOCTYPE html><html><head><title>Print Receipt</title>');
+        w.document.write('<style>@page{size:80mm auto;margin:0}body{margin:0;padding:0;font-family:Arial,sans-serif;}</style>');
+        w.document.write('</head><body>');
+        w.document.write(printArea.innerHTML);
+        w.document.write('</body></html>');
+        w.document.close();
+        w.onload = function() { setTimeout(function() { w.print(); }, 300); };
+    }
 }
 </script>
 <?php endif; ?>
