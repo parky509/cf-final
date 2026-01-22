@@ -721,30 +721,13 @@ document.getElementById('order-modal').addEventListener('click',function(e){if(e
 // Prevent form resubmission on back button - but do NOT auto-reload
 if(window.history.replaceState)window.history.replaceState(null,null,window.location.href);
 
-// Load html2canvas immediately for instant sharing
-var html2canvasReady = false;
-(function() {
-    if (!window.html2canvas) {
-        var script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
-        script.onload = function() { html2canvasReady = true; };
-        document.head.appendChild(script);
-    } else {
-        html2canvasReady = true;
-    }
-})();
-
-// Send Order Receipt via Web Share API - instant response
+// Send Order Receipt- opens share modal immediately
 function sendOrderReceipt(id) {
-    if (!html2canvasReady) {
-        alert('Please wait a moment and try again');
-        return;
-    }
     fetch('<?php echo admin_url('admin-ajax.php'); ?>?action=cfi_get_order_details&order_id='+id)
     .then(function(r){return r.json()})
     .then(function(d){
         if(d.success) {
-            shareOrderReceiptImage(d.data);
+            openShareModal(buildOrderShareText(d.data));
         } else {
             alert('Failed to load order details');
         }
@@ -752,200 +735,99 @@ function sendOrderReceipt(id) {
     .catch(function(){alert('Error loading order')});
 }
 
-function shareOrderReceiptImage(o) {
-    // Create hidden receipt element for capture
-    var receiptDiv = document.createElement('div');
-    receiptDiv.id = 'share-receipt-temp';
-    receiptDiv.style.cssText = 'position:fixed;left:-9999px;top:0;width:80mm;background:#fff;padding:3mm;font-family:Courier New,monospace;font-size:12px;';
-    
-    var html = '';
-    html += '<div style="text-align:center;padding:8px 0;border-bottom:2px solid #000">';
-    html += '<div style="font-size:16px;font-weight:900">CHINEMEREM FOODS</div>';
-    html += '<div style="font-size:11px;color:#c00;font-weight:700">CREDIT ORDER (REPRINT)</div>';
-    html += '</div>';
-    html += '<div style="padding:8px 0;border-bottom:1px solid #000;font-size:11px">';
-    html += '<div style="display:flex;justify-content:space-between"><span>Order:</span><strong>'+(o.order_number||'N/A')+'</strong></div>';
-    html += '<div style="display:flex;justify-content:space-between"><span>Date:</span><span>'+(o.order_date||'N/A')+'</span></div>';
-    html += '<div style="display:flex;justify-content:space-between"><span>Time:</span><span>'+(o.order_time||'N/A')+'</span></div>';
-    html += '<div style="display:flex;justify-content:space-between"><span>Customer:</span><span>'+(o.customer_name||'N/A')+'</span></div>';
-    html += '</div>';
-    html += '<div style="padding:8px 0;font-size:10px">';
-    html += '<div style="display:grid;grid-template-columns:1.6fr 0.8fr 0.5fr 0.9fr;font-weight:700;background:#000;color:#fff;padding:4px">';
-    html += '<span>ITEM</span><span style="text-align:right">PRICE</span><span style="text-align:center">QTY</span><span style="text-align:right">TOTAL</span>';
-    html += '</div>';
+function buildOrderShareText(o) {
+    var text = '📋 *CHINEMEREM FOODS*\n';
+    text += '━━━━━━━━━━━━━━━━━━\n';
+    text += '*CREDIT ORDER RECEIPT*\n';
+    text += '━━━━━━━━━━━━━━━━━━\n\n';
+    text += '🔖 Order: *' + (o.order_number||'N/A') + '*\n';
+    text += '📅 Date: ' + (o.order_date||'N/A') + '\n';
+    text += '🕐 Time: ' + (o.order_time||'N/A') + '\n';
+    text += '👤 Customer: *' + (o.customer_name||'N/A') + '*\n';
+    text += '━━━━━━━━━━━━━━━━━━\n\n';
+    text += '*ITEMS ORDERED:*\n';
     var totalDiscount = 0;
     if(o.items && o.items.length > 0) {
-        o.items.forEach(function(i) {
+        o.items.forEach(function(i, idx) {
             totalDiscount += Number(i.discount) || 0;
-            html += '<div style="display:grid;grid-template-columns:1.6fr 0.8fr 0.5fr 0.9fr;padding:4px 0;border-bottom:1px dashed #ccc">';
-            html += '<span>'+escapeHtml(i.product_name)+'</span>';
-            html += '<span style="text-align:right;font-weight:700">₦'+formatReceiptNumber(i.price)+'</span>';
-            html += '<span style="text-align:center;font-weight:700">'+formatReceiptNumber(i.quantity)+'</span>';
-            html += '<span style="text-align:right;font-weight:700">₦'+formatReceiptNumber(i.total)+'</span>';
-            html += '</div>';
+            text += (idx+1) + '. ' + i.product_name + '\n';
+            text += '   ₦' + formatReceiptNumber(i.price) + ' × ' + formatReceiptNumber(i.quantity) + ' = *₦' + formatReceiptNumber(i.total) + '*\n';
             if(Number(i.discount) > 0) {
-                html += '<div style="display:flex;justify-content:space-between;font-size:9px;color:#c00;padding:2px 0">';
-                html += '<span>Discount:</span><span style="font-weight:700">-₦'+formatReceiptNumber(i.discount)+'</span></div>';
+                text += '   Discount: -₦' + formatReceiptNumber(i.discount) + '\n';
             }
         });
     }
-    html += '</div>';
-    html += '<div style="padding:8px 0;border-top:2px solid #000">';
-    html += '<div style="display:flex;justify-content:space-between;font-weight:700"><span>Total Discount:</span><span style="color:#c00">-₦'+formatReceiptNumber(totalDiscount)+'</span></div>';
-    html += '<div style="display:flex;justify-content:space-between;font-weight:900;font-size:14px;background:#000;color:#fff;padding:8px;margin:8px 0"><span>ORDER TOTAL:</span><span>₦'+formatReceiptNumber(o.grand_total||0)+'</span></div>';
-    html += '</div>';
-    html += '<div style="background:#ffe0e0;color:#c00;padding:8px;text-align:center;font-weight:700;border:2px solid #c00;margin:8px 0">⚠ CREDIT ORDER - PAYMENT PENDING</div>';
-    html += '<div style="text-align:center;padding:8px 0;border-top:1px dashed #000;font-size:10px">';
-    html += '<div style="font-weight:700">Thank you for your patronage!</div>';
-    html += '<div style="color:#666;margin-top:4px">Powered by BendlessTech</div>';
-    html += '</div>';
-    
-    receiptDiv.innerHTML = html;
-    document.body.appendChild(receiptDiv);
-    
-    // Immediate capture - no delay
-    html2canvas(receiptDiv, { scale: 1.5, backgroundColor: '#ffffff', logging: false }).then(function(canvas) {
-        document.body.removeChild(receiptDiv);
-        canvas.toBlob(function(blob) {
-            var file = new File([blob], 'order-receipt-'+(o.order_number||'unknown')+'.png', { type: 'image/png' });
-            var receiptText = 'CHINEMEREM FOODS - Credit Order\n';
-            receiptText += 'Order: '+(o.order_number||'N/A')+'\n';
-            receiptText += 'Customer: '+(o.customer_name||'N/A')+'\n';
-            receiptText += 'Total: ₦'+formatReceiptNumber(o.grand_total||0);
-            
-            // Always try Web Share API first - most mobile devices support it
-            if (navigator.share) {
-                navigator.share({
-                    title: 'Order Receipt - '+(o.order_number||''),
-                    text: receiptText,
-                    files: [file]
-                }).catch(function(err) {
-                    // Only download if share was not just cancelled by user
-                    if (err.name !== 'AbortError') {
-                        // Try sharing without file as fallback
-                        navigator.share({
-                            title: 'Order Receipt - '+(o.order_number||''),
-                            text: receiptText
-                        }).catch(function() {
-                            downloadReceiptBlob(blob, 'order-receipt-'+(o.order_number||'unknown')+'.png');
-                        });
-                    }
-                });
-            } else {
-                downloadReceiptBlob(blob, 'order-receipt-'+(o.order_number||'unknown')+'.png');
-            }
-        }, 'image/png');
-    }).catch(function(err) {
-        document.body.removeChild(receiptDiv);
-        alert('Failed to generate receipt image');
-    });
+    text += '\n━━━━━━━━━━━━━━━━━━\n';
+    text += 'Total Discount: -₦' + formatReceiptNumber(totalDiscount) + '\n';
+    text += '*💰 ORDER TOTAL: ₦' + formatReceiptNumber(o.grand_total||0) + '*\n';
+    text += '━━━━━━━━━━━━━━━━━━\n\n';
+    text += '⚠️ *CREDIT ORDER - PAYMENT PENDING*\n\n';
+    text += '_Thank you for your patronage!_\n';
+    text += '_Powered by BendlessTech_';
+    return text;
 }
 
-// Send Payment Receipt via Web Share API - instant response
-function sendPayReceipt(id) {
-    if (!html2canvasReady) {
-        alert('Please wait a moment and try again');
-        return;
+function openShareModal(text) {
+    // Try Web Share API first (works on most mobile devices)
+    if (navigator.share) {
+        navigator.share({
+            text: text
+        }).catch(function(err) {
+            // If user cancelled, do nothing. Otherwise fallback.
+            if (err.name !== 'AbortError') {
+                openWhatsAppDirect(text);
+            }
+        });
+    } else {
+        // Fallback: open WhatsApp directly
+        openWhatsAppDirect(text);
     }
+}
+
+function openWhatsAppDirect(text) {
+    var encoded = encodeURIComponent(text);
+    window.open('https://wa.me/?text=' + encoded, '_blank');
+}
+
+// Send Payment Receipt - opens share modal immediately
+function sendPayReceipt(id) {
     var p = payData[id];
     if (!p) {
         alert('Payment not found');
         return;
     }
-    sharePayReceiptImage(p);
+    openShareModal(buildPaymentShareText(p));
 }
 
-function sharePayReceiptImage(p) {
-    // Create hidden receipt element for capture
-    var receiptDiv = document.createElement('div');
-    receiptDiv.id = 'share-receipt-temp';
-    receiptDiv.style.cssText = 'position:fixed;left:-9999px;top:0;width:80mm;background:#fff;padding:3mm;font-family:Courier New,monospace;font-size:12px;';
-    
-    var html = '';
-    html += '<div style="text-align:center;padding:8px 0;border-bottom:2px solid #000">';
-    html += '<div style="font-size:16px;font-weight:900">CHINEMEREM FOODS</div>';
-    html += '<div style="font-size:11px;font-weight:700">Debt Payment Receipt (Reprint)</div>';
-    html += '</div>';
-    html += '<div style="padding:8px 0;border-bottom:1px solid #000;font-size:11px">';
-    html += '<div style="display:flex;justify-content:space-between"><span>Receipt #:</span><strong>PAY-'+p.id+'</strong></div>';
-    html += '<div style="display:flex;justify-content:space-between"><span>Date:</span><span>'+p.transaction_date+'</span></div>';
-    html += '<div style="display:flex;justify-content:space-between"><span>Time:</span><span>'+p.transaction_time+'</span></div>';
-    html += '<div style="display:flex;justify-content:space-between"><span>Debtor:</span><span>'+escapeHtml(p.debtor_name||'')+'</span></div>';
-    html += '<div style="display:flex;justify-content:space-between"><span>Staff:</span><span>'+escapeHtml(p.staff_name||'-')+'</span></div>';
-    html += '</div>';
-    html += '<div style="padding:8px 0;border-bottom:1px solid #000;font-size:11px">';
-    html += '<div style="display:flex;justify-content:space-between"><span>Balance Before:</span><span style="font-weight:700;color:#c00">₦'+formatReceiptNumber(p.balance_before)+'</span></div>';
-    html += '<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:900;color:#008800;margin:8px 0"><span>PAYMENT:</span><span>₦'+formatReceiptNumber(p.amount)+'</span></div>';
+function buildPaymentShareText(p) {
+    var text = '📋 *CHINEMEREM FOODS*\n';
+    text += '━━━━━━━━━━━━━━━━━━\n';
+    text += '*DEBT PAYMENT RECEIPT*\n';
+    text += '━━━━━━━━━━━━━━━━━━\n\n';
+    text += '🔖 Receipt: *PAY-' + p.id + '*\n';
+    text += '📅 Date: ' + p.transaction_date + '\n';
+    text += '🕐 Time: ' + p.transaction_time + '\n';
+    text += '👤 Debtor: *' + (p.debtor_name||'') + '*\n';
+    text += '━━━━━━━━━━━━━━━━━━\n\n';
+    text += '*PAYMENT DETAILS:*\n';
+    text += 'Balance Before: ₦' + formatReceiptNumber(p.balance_before) + '\n';
+    text += '*💰 PAYMENT: ₦' + formatReceiptNumber(p.amount) + '*\n';
     if(parseFloat(p.transfer_amount) > 0) {
-        html += '<div style="display:flex;justify-content:space-between"><span>Via Transfer:</span><span style="font-weight:700">₦'+formatReceiptNumber(p.transfer_amount)+'</span></div>';
+        text += '   Via Transfer: ₦' + formatReceiptNumber(p.transfer_amount) + '\n';
     }
     if(parseFloat(p.cash_amount) > 0) {
-        html += '<div style="display:flex;justify-content:space-between"><span>Via Cash:</span><span style="font-weight:700">₦'+formatReceiptNumber(p.cash_amount)+'</span></div>';
+        text += '   Via Cash: ₦' + formatReceiptNumber(p.cash_amount) + '\n';
     }
-    html += '</div>';
-    var balColor = parseFloat(p.balance_after) > 0 ? '#c00' : '#008800';
-    html += '<div style="padding:8px 0;border-top:2px solid #000">';
-    html += '<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:900;color:'+balColor+'"><span>NEW BALANCE:</span><span>₦'+formatReceiptNumber(p.balance_after)+'</span></div>';
+    text += '\n━━━━━━━━━━━━━━━━━━\n';
+    var balColor = parseFloat(p.balance_after) > 0 ? '🔴' : '🟢';
+    text += balColor + ' *NEW BALANCE: ₦' + formatReceiptNumber(p.balance_after) + '*\n';
     if(parseFloat(p.balance_after) < 0) {
-        html += '<div style="display:flex;justify-content:space-between;color:#008800;font-weight:700"><span>Overpayment:</span><span>₦'+formatReceiptNumber(Math.abs(p.balance_after))+'</span></div>';
+        text += '✅ Overpayment Credit: ₦' + formatReceiptNumber(Math.abs(p.balance_after)) + '\n';
     }
-    html += '</div>';
-    html += '<div style="text-align:center;padding:8px 0;border-top:1px dashed #000;font-size:10px">';
-    html += '<div style="font-weight:700">Payment received with thanks!</div>';
-    html += '<div style="color:#666;margin-top:4px">Powered by BendlessTech</div>';
-    html += '</div>';
-    
-    receiptDiv.innerHTML = html;
-    document.body.appendChild(receiptDiv);
-    
-    // Immediate capture - no delay
-    html2canvas(receiptDiv, { scale: 1.5, backgroundColor: '#ffffff', logging: false }).then(function(canvas) {
-        document.body.removeChild(receiptDiv);
-        canvas.toBlob(function(blob) {
-            var file = new File([blob], 'payment-receipt-PAY-'+p.id+'.png', { type: 'image/png' });
-            var receiptText = 'CHINEMEREM FOODS - Payment Receipt\n';
-            receiptText += 'Receipt: PAY-'+p.id+'\n';
-            receiptText += 'Debtor: '+(p.debtor_name||'')+'\n';
-            receiptText += 'Payment: ₦'+formatReceiptNumber(p.amount)+'\n';
-            receiptText += 'New Balance: ₦'+formatReceiptNumber(p.balance_after);
-            
-            // Always try Web Share API first - most mobile devices support it
-            if (navigator.share) {
-                navigator.share({
-                    title: 'Payment Receipt - PAY-'+p.id,
-                    text: receiptText,
-                    files: [file]
-                }).catch(function(err) {
-                    // Only download if share was not just cancelled by user
-                    if (err.name !== 'AbortError') {
-                        // Try sharing without file as fallback
-                        navigator.share({
-                            title: 'Payment Receipt - PAY-'+p.id,
-                            text: receiptText
-                        }).catch(function() {
-                            downloadReceiptBlob(blob, 'payment-receipt-PAY-'+p.id+'.png');
-                        });
-                    }
-                });
-            } else {
-                downloadReceiptBlob(blob, 'payment-receipt-PAY-'+p.id+'.png');
-            }
-        }, 'image/png');
-    }).catch(function(err) {
-        document.body.removeChild(receiptDiv);
-        alert('Failed to generate receipt image');
-    });
-}
-
-function downloadReceiptBlob(blob, filename) {
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    text += '━━━━━━━━━━━━━━━━━━\n\n';
+    text += '_Payment received with thanks!_\n';
+    text += '_Powered by BendlessTech_';
+    return text;
 }
 </script>
 </body>
