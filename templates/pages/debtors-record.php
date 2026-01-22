@@ -469,6 +469,12 @@ table input{width:50px}
 </style>
 </head>
 <body class="cfi-debtor-loading">
+<script>
+// Prevent form resubmission dialog on page refresh - run immediately
+if (window.history.replaceState) {
+    window.history.replaceState(null, null, window.location.href);
+}
+</script>
 <main class="container">
 <div class="header">
 <?php if ($selected_debtor && ($action === 'order' || $action === 'pay')) : ?>

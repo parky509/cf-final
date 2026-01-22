@@ -500,6 +500,12 @@ $products = CFI_Products::get_all();
     </style>
 </head>
 <body>
+<script>
+// Prevent form resubmission dialog on page refresh - run immediately
+if (window.history.replaceState) {
+    window.history.replaceState(null, null, window.location.href);
+}
+</script>
 <div class="container">
     <div class="page-header">
         <h1><i class="fas fa-cart-plus"></i> Take Order</h1>
