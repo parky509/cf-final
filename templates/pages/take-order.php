@@ -1495,39 +1495,58 @@ async function printOfflineReceipt() {
             return;
         }
     }
-    var printWindow = window.open('', '_blank', 'width=400,height=700');
-    if (!printWindow) {
-        alert('Please allow popups to print receipts');
-        return;
+    
+    // Build the HTML content
+    var h = '<!DOCTYPE html><html><head><title>Print Receipt</title>';
+    h += '<style>';
+    h += '*{margin:0;padding:0;box-sizing:border-box}';
+    h += 'html,body{width:80mm!important;max-width:80mm!important;margin:0!important;padding:0!important}';
+    h += 'body{font-family:"Courier New",Courier,monospace;font-size:12px;line-height:1.4;color:#000;background:#fff}';
+    h += '.receipt-body{width:80mm;padding:2mm;box-sizing:border-box}';
+    h += '.receipt-company{text-align:center;margin-bottom:6px}';
+    h += '.receipt-company h2{font-size:16px;font-weight:800;margin:0 0 4px;letter-spacing:0.5px;text-transform:uppercase}';
+    h += '.receipt-divider{border-top:1px solid #000;margin:6px 0}';
+    h += '.receipt-info p{display:flex;justify-content:space-between;margin:4px 0;font-size:12px}';
+    h += '.receipt-row{display:grid;grid-template-columns:1.6fr 0.8fr 0.5fr 0.9fr;gap:6px;align-items:baseline;font-size:11px}';
+    h += '.receipt-row .item-price,.receipt-row .item-qty,.receipt-row .item-total{text-align:right}';
+    h += '.receipt-item-header{font-size:10px;font-weight:700;text-transform:uppercase}';
+    h += '.receipt-item{padding:4px 0;border-bottom:1px dashed #999}';
+    h += '.receipt-item:last-child{border-bottom:none}';
+    h += '.receipt-item-discount{display:flex;justify-content:space-between;font-size:10px;margin-top:2px}';
+    h += '.receipt-amount{font-weight:800}';
+    h += '.receipt-totals p{display:flex;justify-content:space-between;margin:4px 0;font-size:12px}';
+    h += '.receipt-totals .grand{font-size:13px;font-weight:700}';
+    h += '.receipt-footer{text-align:center;margin-top:6px;font-size:10px}';
+    h += '@media print{body{margin:0;padding:0}}';
+    h += '</style></head><body>';
+    h += buildOfflineReceiptContent(receipt);
+    h += '</body></html>';
+    
+    // Try opening popup first (works better on some tablets)
+    var printWindow = window.open('', 'printReceipt', 'width=400,height=700,scrollbars=yes');
+    if (printWindow && !printWindow.closed) {
+        printWindow.document.write(h);
+        printWindow.document.close();
+        printWindow.onload = function() {
+            setTimeout(function() { printWindow.print(); }, 300);
+        };
+        printWindow.focus();
+    } else {
+        // Popup blocked - use iframe method for tablets
+        var iframe = document.createElement('iframe');
+        iframe.style.cssText = 'position:absolute;width:0;height:0;border:0;';
+        document.body.appendChild(iframe);
+        var doc = iframe.contentWindow.document;
+        doc.open();
+        doc.write(h);
+        doc.close();
+        iframe.contentWindow.onload = function() {
+            setTimeout(function() {
+                iframe.contentWindow.print();
+                setTimeout(function() { document.body.removeChild(iframe); }, 1000);
+            }, 300);
+        };
     }
-    printWindow.document.write('<!DOCTYPE html><html><head><title>Print Receipt</title>');
-    printWindow.document.write('<style>');
-    printWindow.document.write('*{margin:0;padding:0;box-sizing:border-box}');
-    printWindow.document.write('html,body{width:80mm!important;max-width:80mm!important;margin:0!important;padding:0!important}');
-    printWindow.document.write('body{font-family:"Courier New",Courier,monospace;font-size:12px;line-height:1.4;color:#000;background:#fff}');
-    printWindow.document.write('.receipt-body{width:80mm;padding:2mm;box-sizing:border-box}');
-    printWindow.document.write('.receipt-company{text-align:center;margin-bottom:6px}');
-    printWindow.document.write('.receipt-company h2{font-size:16px;font-weight:800;margin:0 0 4px;letter-spacing:0.5px;text-transform:uppercase}');
-    printWindow.document.write('.receipt-divider{border-top:1px solid #000;margin:6px 0}');
-    printWindow.document.write('.receipt-info p{display:flex;justify-content:space-between;margin:4px 0;font-size:12px}');
-    printWindow.document.write('.receipt-row{display:grid;grid-template-columns:1.6fr 0.8fr 0.5fr 0.9fr;gap:6px;align-items:baseline;font-size:11px}');
-    printWindow.document.write('.receipt-row .item-price,.receipt-row .item-qty,.receipt-row .item-total{text-align:right}');
-    printWindow.document.write('.receipt-item-header{font-size:10px;font-weight:700;text-transform:uppercase}');
-    printWindow.document.write('.receipt-item{padding:4px 0;border-bottom:1px dashed #999}');
-    printWindow.document.write('.receipt-item:last-child{border-bottom:none}');
-    printWindow.document.write('.receipt-item-discount{display:flex;justify-content:space-between;font-size:10px;margin-top:2px}');
-    printWindow.document.write('.receipt-amount{font-weight:800}');
-    printWindow.document.write('.receipt-totals p{display:flex;justify-content:space-between;margin:4px 0;font-size:12px}');
-    printWindow.document.write('.receipt-totals .grand{font-size:13px;font-weight:700}');
-    printWindow.document.write('.receipt-footer{text-align:center;margin-top:6px;font-size:10px}');
-    printWindow.document.write('@media print{body{margin:0;padding:0}}');
-    printWindow.document.write('</style></head><body>');
-    printWindow.document.write(buildOfflineReceiptContent(receipt));
-    printWindow.document.write('</body></html>');
-    printWindow.document.close();
-    printWindow.onload = function() {
-        setTimeout(function() { printWindow.print(); }, 300);
-    };
 }
 
 function showCustomerNameError(message) {
