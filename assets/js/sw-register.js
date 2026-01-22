@@ -241,15 +241,41 @@
                 .then(function(registration) {
                     console.log('CFI ServiceWorker registered:', registration.scope);
                     
-                    // Check for updates
+                    // Check for updates immediately and periodically
+                    registration.update();
+                    
+                    // Check for updates every 5 minutes
+                    setInterval(function() {
+                        registration.update();
+                    }, 5 * 60 * 1000);
+                    
+                    // Check for updates when page becomes visible
+                    document.addEventListener('visibilitychange', function() {
+                        if (!document.hidden) {
+                            registration.update();
+                        }
+                    });
+                    
+                    // Handle new service worker installation
                     registration.addEventListener('updatefound', function() {
                         const newWorker = registration.installing;
                         newWorker.addEventListener('statechange', function() {
                             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                // New service worker available
-                                console.log('CFI: New version available');
+                                // New service worker available - skip waiting to activate immediately
+                                console.log('CFI: New version available, activating immediately');
+                                newWorker.postMessage({ type: 'SKIP_WAITING' });
                             }
                         });
+                    });
+                    
+                    // Reload page when new service worker takes control
+                    let refreshing = false;
+                    navigator.serviceWorker.addEventListener('controllerchange', function() {
+                        if (!refreshing) {
+                            refreshing = true;
+                            console.log('CFI: New service worker activated');
+                            // Don't auto-reload - let user continue, changes will apply on next load
+                        }
                     });
                 })
                 .catch(function(error) {

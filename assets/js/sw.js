@@ -3,7 +3,7 @@
  * Aggressive caching for blazing fast load times
  */
 
-const CACHE_NAME = 'cfi-cache-v4';
+const CACHE_NAME = 'cfi-cache-v5';
 const OFFLINE_URL = '/offline.html';
 
 // Static assets to cache immediately
@@ -40,6 +40,13 @@ self.addEventListener('install', function(event) {
     self.skipWaiting();
 });
 
+// Handle messages from clients (e.g., skip waiting request)
+self.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'SKIP_WAITING') {
+        self.skipWaiting();
+    }
+});
+
 // Activate event - clean old caches
 self.addEventListener('activate', function(event) {
     event.waitUntil(
@@ -48,12 +55,14 @@ self.addEventListener('activate', function(event) {
                 cacheNames.filter(function(cacheName) {
                     return cacheName.startsWith('cfi-') && cacheName !== CACHE_NAME;
                 }).map(function(cacheName) {
+                    console.log('CFI: Deleting old cache:', cacheName);
                     return caches.delete(cacheName);
                 })
             );
         })
     );
     // Take control of all pages immediately
+    console.log('CFI: Service worker activated, taking control');
     self.clients.claim();
 });
 
