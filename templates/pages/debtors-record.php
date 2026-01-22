@@ -1411,76 +1411,80 @@ if ('bluetooth' in navigator) {
     }
 }
 
-// Fallback to browser print with improved formatting - FULL WIDTH 80mm with PRICE column
-var w=window.open('','_blank','width=400,height=700');
-var h='<!DOCTYPE html><html><head><title>Print Receipt</title>';
-h+='<style>';
-h+='@page{size:80mm auto;margin:0}';
-h+='*{margin:0;padding:0;box-sizing:border-box}';
-h+='html,body{width:100%!important;max-width:100%!important;margin:0!important;padding:0!important}';
-h+='body{font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.3;color:#000;background:#fff}';
-h+='.receipt{width:100%;padding:3mm}';
-h+='.header{text-align:center;padding:10px 0;border-bottom:3px double #000;margin-bottom:12px}';
-h+='.header h2{font-size:20px;font-weight:900;margin:0 0 5px;text-transform:uppercase}';
-h+='.header p{font-size:14px;margin:0;font-weight:700;color:#c00}';
-h+='.info{margin:10px 0;padding:10px 0;border-bottom:2px solid #000}';
-h+='.info-row{display:flex;justify-content:space-between;margin:6px 0;font-size:12px}';
-h+='.info-row .label{font-weight:600}';
-h+='.info-row .value{font-weight:900}';
-h+='.items-table{width:100%;margin:10px 0;border-collapse:collapse;font-size:12px;table-layout:fixed;border:2px solid #000}';
-h+='.items-table th{background:#000;color:#fff;padding:8px 4px;font-size:11px;font-weight:900;text-align:center;border:2px solid #000}';
-h+='.items-table th:first-child{text-align:left;width:44%}';
-h+='.items-table th:nth-child(2){width:18%}';
-h+='.items-table th:nth-child(3){width:12%}';
-h+='.items-table th:nth-child(4){width:26%}';
-h+='.items-table td{padding:8px 4px;border:2px solid #000;vertical-align:middle;font-size:11px}';
-h+='.items-table td:first-child{text-align:left;font-weight:600}';
-h+='.items-table td:nth-child(2){text-align:right}';
-h+='.items-table td:nth-child(3){text-align:center}';
-h+='.items-table td:nth-child(4){text-align:right;font-weight:900;font-size:12px}';
-h+='.items-table .discount-row td{font-style:italic;background:#f5f5f5}';
-h+='.items-table .discount-label{text-align:left}';
-h+='.items-table .discount-value{text-align:right;color:#c00}';
-h+='.items-table tr:nth-child(even){background:#f0f0f0}';
-h+='.totals{margin:12px 0;padding:10px 0;border-top:3px solid #000}';
-h+='.total-row{display:flex;justify-content:space-between;margin:6px 0;font-size:14px;font-weight:900}';
-h+='.grand-total{background:#000;color:#fff;padding:12px 8px;margin:10px 0;font-size:16px;font-weight:900;display:flex;justify-content:space-between}';
-h+='.balance-row{display:flex;justify-content:space-between;margin:10px 0;font-size:15px;font-weight:900;color:#c00}';
-h+='.credit-note{background:#ffe0e0;color:#c00;padding:10px;text-align:center;font-weight:900;margin:12px 0;border:3px solid #c00;font-size:13px}';
-h+='.footer{text-align:center;margin-top:12px;padding-top:10px;border-top:2px dashed #000;font-size:11px}';
-h+='.footer .thanks{font-weight:900;font-size:13px}';
-h+='@media print{html,body{width:100%!important}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}';
-h+='</style></head><body>';
-h+='<div class="receipt">';
-h+='<div class="header"><h2>CHINEMEREM FOODS</h2><p>*** CREDIT ORDER ***</p></div>';
-h+='<div class="info">';
-h+='<div class="info-row"><span class="label">Order No:</span><span class="value"><?php echo esc_js($order_receipt['order_number']); ?></span></div>';
-h+='<div class="info-row"><span class="label">Date:</span><span class="value"><?php echo esc_js($order_receipt['date']); ?></span></div>';
-h+='<div class="info-row"><span class="label">Time:</span><span class="value"><?php echo esc_js($order_receipt['time']); ?></span></div>';
-h+='<div class="info-row"><span class="label">Debtor:</span><span class="value" style="color:#c00"><?php echo esc_js($order_receipt['debtor_name']); ?></span></div>';
-h+='<div class="info-row"><span class="label">Staff:</span><span class="value"><?php echo esc_js($order_receipt['staff']); ?></span></div>';
-h+='</div>';
-h+='<table class="items-table">';
-h+='<tr><th>ITEM</th><th>PRICE</th><th>QTY</th><th>AMOUNT</th></tr>';
+// Fallback to browser print - 80mm thermal format matching take-order
+var printWindow = window.open('', '_blank', 'width=400,height=700');
+if (!printWindow) {
+    alert('Please allow popups to print receipts');
+    return;
+}
+
+printWindow.document.write('<!DOCTYPE html><html><head><title>Print Receipt</title>');
+printWindow.document.write('<style>');
+printWindow.document.write('@page{size:80mm auto;margin:0}');
+printWindow.document.write('*{margin:0;padding:0;box-sizing:border-box}');
+printWindow.document.write('html,body{width:80mm!important;max-width:80mm!important;margin:0!important;padding:0!important}');
+printWindow.document.write('body{font-family:"Courier New",Courier,monospace;font-size:12px;line-height:1.4;color:#000;background:#fff}');
+printWindow.document.write('.receipt{width:80mm;padding:2mm;box-sizing:border-box}');
+printWindow.document.write('.header{text-align:center;margin-bottom:6px}');
+printWindow.document.write('.header h2{font-size:16px;font-weight:800;margin:0 0 4px;letter-spacing:0.5px;text-transform:uppercase}');
+printWindow.document.write('.header p{font-size:11px;margin:0}');
+printWindow.document.write('.divider{border-top:1px solid #000;margin:6px 0}');
+printWindow.document.write('.info-row{display:flex;justify-content:space-between;margin:4px 0;font-size:12px}');
+printWindow.document.write('.info-row .value{font-weight:700}');
+printWindow.document.write('.items{margin:6px 0}');
+printWindow.document.write('.item-row{display:grid;grid-template-columns:1.6fr 0.8fr 0.5fr 0.9fr;gap:6px;align-items:baseline;font-size:11px}');
+printWindow.document.write('.item-row .item-price,.item-row .item-qty,.item-row .item-total{text-align:right}');
+printWindow.document.write('.item-header{font-size:10px;font-weight:700;text-transform:uppercase}');
+printWindow.document.write('.item{padding:4px 0;border-bottom:1px dashed #999}');
+printWindow.document.write('.item:last-child{border-bottom:none}');
+printWindow.document.write('.item-discount{display:flex;justify-content:space-between;font-size:10px;margin-top:2px}');
+printWindow.document.write('.receipt-amount{font-weight:800}');
+printWindow.document.write('.totals p{display:flex;justify-content:space-between;margin:4px 0;font-size:12px}');
+printWindow.document.write('.totals .grand{font-size:13px;font-weight:700}');
+printWindow.document.write('.credit-note{text-align:center;padding:6px;margin:6px 0;font-weight:700;font-size:10px;border:1px dashed #000}');
+printWindow.document.write('.footer{text-align:center;margin-top:6px;font-size:10px}');
+printWindow.document.write('.footer .thanks{font-weight:700;font-size:11px}');
+printWindow.document.write('@media print{html,body{width:100%!important}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}');
+printWindow.document.write('</style></head><body>');
+
+var h = '<div class="receipt">';
+h += '<div class="header"><h2>CHINEMEREM FOODS</h2><p>CREDIT ORDER RECEIPT</p></div>';
+h += '<div class="divider"></div>';
+h += '<div class="info">';
+h += '<div class="info-row"><span class="label">Order No:</span><span class="value"><?php echo esc_js($order_receipt['order_number']); ?></span></div>';
+h += '<div class="info-row"><span class="label">Date:</span><span class="value"><?php echo esc_js($order_receipt['date']); ?></span></div>';
+h += '<div class="info-row"><span class="label">Time:</span><span class="value"><?php echo esc_js($order_receipt['time']); ?></span></div>';
+h += '<div class="info-row"><span class="label">Debtor:</span><span class="value"><?php echo esc_js($order_receipt['debtor_name']); ?></span></div>';
+h += '<div class="info-row"><span class="label">Staff:</span><span class="value"><?php echo esc_js($order_receipt['staff']); ?></span></div>';
+h += '</div>';
+h += '<div class="divider"></div>';
+h += '<div class="items">';
+h += '<div class="item-row item-header"><span>Item</span><span class="item-price">Price</span><span class="item-qty">Qty</span><span class="item-total">Total</span></div>';
 <?php foreach ($order_receipt['items'] as $item) : ?>
-h+='<tr class="item-row">';
-h+='<td><?php echo esc_js($item['product_name']); ?></td>';
-h+='<td>₦<?php echo cfi_format_receipt_value($item['price']); ?></td>';
-h+='<td style="text-align:center"><?php echo cfi_format_receipt_value($item['quantity']); ?></td>';
-h+='<td><strong>₦<?php echo cfi_format_receipt_value($item['total']); ?></strong></td>';
-h+='</tr>';
-h+='<tr class="discount-row"><td class="discount-label" colspan="3">Discount</td><td class="discount-value"><?php echo isset($item['discount']) && $item['discount'] > 0 ? '-₦' . cfi_format_receipt_value($item['discount']) : '-'; ?></td></tr>';
+h += '<div class="item">';
+h += '<div class="item-row"><span><?php echo esc_js($item['product_name']); ?></span><span class="item-price receipt-amount">₦<?php echo cfi_format_receipt_value($item['price']); ?></span><span class="item-qty receipt-amount"><?php echo cfi_format_receipt_value($item['quantity']); ?></span><span class="item-total receipt-amount">₦<?php echo cfi_format_receipt_value($item['total']); ?></span></div>';
+h += '<div class="item-discount"><span>Discount:</span><span class="receipt-amount"><?php echo isset($item['discount']) && $item['discount'] > 0 ? '-₦' . cfi_format_receipt_value($item['discount']) : '-'; ?></span></div>';
+h += '</div>';
 <?php endforeach; ?>
-h+='</table>';
-h+='<div class="totals"><div class="total-row"><span>Total Discount:</span><span style="color:#c00">-₦<?php echo cfi_format_receipt_value($order_discount_total); ?></span></div></div>';
-h+='<div class="grand-total"><span>ORDER TOTAL:</span><span>₦<?php echo cfi_format_receipt_value($order_receipt['total']); ?></span></div>';
-h+='<div class="balance-row"><span>NEW BALANCE:</span><span>₦<?php echo cfi_format_receipt_value($order_receipt['new_balance']); ?></span></div>';
-h+='<div class="credit-note">⚠ CREDIT ORDER - PAYMENT PENDING</div>';
-h+='<div class="footer"><p class="thanks">Thank you for your patronage!</p><p style="margin-top:5px;font-size:9px">Powered by BendlessTech</p></div>';
-h+='</div>';
-h+='</body></html>';
-w.document.write(h);w.document.close();
-w.onload=function(){setTimeout(function(){w.print()},300)};
+h += '</div>';
+h += '<div class="divider"></div>';
+h += '<div class="totals">';
+h += '<p><span>Subtotal:</span><span class="receipt-amount">₦<?php echo cfi_format_receipt_value($order_receipt['total'] + $order_discount_total); ?></span></p>';
+h += '<p><span>Total Discount:</span><span class="receipt-amount">-₦<?php echo cfi_format_receipt_value($order_discount_total); ?></span></p>';
+h += '<p class="grand"><span>Order Total:</span><span class="receipt-amount">₦<?php echo cfi_format_receipt_value($order_receipt['total']); ?></span></p>';
+h += '<p class="grand"><span>New Balance:</span><span class="receipt-amount">₦<?php echo cfi_format_receipt_value($order_receipt['new_balance']); ?></span></p>';
+h += '</div>';
+h += '<div class="credit-note">⚠ CREDIT ORDER - PAYMENT PENDING</div>';
+h += '<div class="divider"></div>';
+h += '<div class="footer"><p class="thanks">Thank you for your patronage!</p><p>Powered by BendlessTech</p></div>';
+h += '</div>';
+
+printWindow.document.write(h);
+printWindow.document.write('</body></html>');
+printWindow.document.close();
+printWindow.onload = function() {
+    setTimeout(function() { printWindow.print(); }, 300);
+};
 }
 function closeOrderModal(){document.getElementById('order-modal').style.display='none';window.location.href='<?php echo esc_url($debtor_record_done_url); ?>'}
 
@@ -1645,55 +1649,69 @@ if ('bluetooth' in navigator) {
     }
 }
 
-// Fallback to browser print
-var w=window.open('','_blank','width=350,height=700');
-var h='<!DOCTYPE html><html><head><title>Print Receipt</title>';
-h+='<style>';
-h+='@page{size:80mm auto;margin:0}';
-h+='*{margin:0;padding:0;box-sizing:border-box}';
-h+='html,body{width:100%!important;max-width:100%!important;margin:0!important;padding:0!important}';
-h+='body{font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.3;color:#000;background:#fff}';
-h+='.receipt{width:100%;padding:3mm}';
-h+='.header{text-align:center;padding:10px 0;border-bottom:3px double #000;margin-bottom:12px}';
-h+='.header h2{font-size:20px;font-weight:900;margin:0 0 5px;text-transform:uppercase}';
-h+='.header p{font-size:14px;margin:0;font-weight:700;color:#0f172a}';
-h+='.info{margin:10px 0;padding:10px 0;border-bottom:2px solid #000}';
-h+='.info p{display:flex;justify-content:space-between;margin:6px 0;font-size:12px}';
-h+='.payment{margin:10px 0;padding:10px 0;border-bottom:2px solid #000}';
-h+='.payment p{display:flex;justify-content:space-between;margin:6px 0;font-size:12px}';
-h+='.payment .big{font-size:14px;font-weight:900;color:#008800}';
-h+='.receipt-amount{font-weight:900}';
-h+='.total{margin:12px 0;padding:10px 0;border-top:3px solid #000}';
-h+='.total p{display:flex;justify-content:space-between;margin:6px 0;font-size:14px;font-weight:900}';
-h+='.footer{text-align:center;margin-top:12px;padding-top:10px;border-top:2px dashed #000;font-size:11px}';
-h+='.footer p{margin:4px 0}';
-h+='.no-print{margin:15px 0;text-align:center}';
-h+='.print-btn{background:#16a34a;color:#fff;border:none;padding:12px 30px;font-size:14px;border-radius:5px;cursor:pointer}';
-h+='@media print{.no-print{display:none !important}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}';
-h+='</style></head><body>';
-h+='<div class="receipt">';
-h+='<div class="header"><h2>CHINEMEREM FOODS</h2><p>Debt Payment Receipt</p></div>';
-h+='<div class="info">';
-h+='<p><span>Receipt #:</span><span class="receipt-amount"><?php echo esc_js($payment_receipt['receipt_number']); ?></span></p>';
-h+='<p><span>Date:</span><span class="receipt-amount"><?php echo esc_js($payment_receipt['date']); ?></span></p>';
-h+='<p><span>Time:</span><span class="receipt-amount"><?php echo esc_js($payment_receipt['time']); ?></span></p>';
-h+='<p><span>Debtor:</span><span class="receipt-amount"><?php echo esc_js($payment_receipt['debtor_name']); ?></span></p>';
-h+='<p><span>Staff:</span><span class="receipt-amount"><?php echo esc_js($payment_receipt['staff']); ?></span></p>';
-h+='</div>';
-h+='<div class="payment">';
-h+='<p><span>Balance Before:</span><span class="receipt-amount" style="color:#cc0000">N<?php echo number_format($payment_receipt['balance_before'], 0); ?></span></p>';
-h+='<p class="big"><span>PAYMENT AMOUNT:</span><span class="receipt-amount">N<?php echo number_format($payment_receipt['payment_amount'], 0); ?></span></p>';
-<?php if ($payment_receipt['transfer_amount'] > 0) : ?>h+='<p><span>  - Via Transfer (<?php echo esc_js($payment_receipt['bank_name']); ?>):</span><span class="receipt-amount">N<?php echo number_format($payment_receipt['transfer_amount'], 0); ?></span></p>';<?php endif; ?>
-<?php if ($payment_receipt['cash_amount'] > 0) : ?>h+='<p><span>  - Via Cash:</span><span class="receipt-amount">N<?php echo number_format($payment_receipt['cash_amount'], 0); ?></span></p>';<?php endif; ?>
-<?php if ($payment_receipt['home_amount'] > 0) : ?>h+='<p><span>  - Home Calculation:</span><span class="receipt-amount">N<?php echo number_format($payment_receipt['home_amount'], 0); ?></span></p>';<?php endif; ?>
-h+='</div>';
-h+='<div class="total">';
-h+='<p style="color:<?php echo $payment_receipt['new_balance'] > 0 ? '#cc0000' : '#008800'; ?>"><span>NEW BALANCE:</span><span class="receipt-amount">N<?php echo number_format($payment_receipt['new_balance'], 0); ?></span></p>';
-h+='</div>';
-h+='<div class="footer"><p>Payment received with thanks!</p><p style="margin-top:5px">Powered by BendlessTech</p></div>';
-h+='</div></body></html>';
-w.document.write(h);w.document.close();
-w.onload=function(){setTimeout(function(){w.print()},300)};
+// Fallback to browser print - 80mm thermal format matching take-order
+var printWindow = window.open('', '_blank', 'width=400,height=700');
+if (!printWindow) {
+    alert('Please allow popups to print receipts');
+    return;
+}
+
+printWindow.document.write('<!DOCTYPE html><html><head><title>Print Receipt</title>');
+printWindow.document.write('<style>');
+printWindow.document.write('@page{size:80mm auto;margin:0}');
+printWindow.document.write('*{margin:0;padding:0;box-sizing:border-box}');
+printWindow.document.write('html,body{width:80mm!important;max-width:80mm!important;margin:0!important;padding:0!important}');
+printWindow.document.write('body{font-family:"Courier New",Courier,monospace;font-size:12px;line-height:1.4;color:#000;background:#fff}');
+printWindow.document.write('.receipt{width:80mm;padding:2mm;box-sizing:border-box}');
+printWindow.document.write('.header{text-align:center;margin-bottom:6px}');
+printWindow.document.write('.header h2{font-size:16px;font-weight:800;margin:0 0 4px;letter-spacing:0.5px;text-transform:uppercase}');
+printWindow.document.write('.header p{font-size:11px;margin:0}');
+printWindow.document.write('.divider{border-top:1px solid #000;margin:6px 0}');
+printWindow.document.write('.info-row{display:flex;justify-content:space-between;margin:4px 0;font-size:12px}');
+printWindow.document.write('.info-row .value{font-weight:700}');
+printWindow.document.write('.receipt-amount{font-weight:800}');
+printWindow.document.write('.totals p{display:flex;justify-content:space-between;margin:4px 0;font-size:12px}');
+printWindow.document.write('.totals .grand{font-size:13px;font-weight:700}');
+printWindow.document.write('.footer{text-align:center;margin-top:6px;font-size:10px}');
+printWindow.document.write('.footer .thanks{font-weight:700;font-size:11px}');
+printWindow.document.write('@media print{html,body{width:100%!important}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}');
+printWindow.document.write('</style></head><body>');
+
+var h = '<div class="receipt">';
+h += '<div class="header"><h2>CHINEMEREM FOODS</h2><p>DEBT PAYMENT RECEIPT</p></div>';
+h += '<div class="divider"></div>';
+h += '<div class="info">';
+h += '<div class="info-row"><span class="label">Receipt #:</span><span class="value"><?php echo esc_js($payment_receipt['receipt_number']); ?></span></div>';
+h += '<div class="info-row"><span class="label">Date:</span><span class="value"><?php echo esc_js($payment_receipt['date']); ?></span></div>';
+h += '<div class="info-row"><span class="label">Time:</span><span class="value"><?php echo esc_js($payment_receipt['time']); ?></span></div>';
+h += '<div class="info-row"><span class="label">Debtor:</span><span class="value"><?php echo esc_js($payment_receipt['debtor_name']); ?></span></div>';
+h += '<div class="info-row"><span class="label">Staff:</span><span class="value"><?php echo esc_js($payment_receipt['staff']); ?></span></div>';
+h += '</div>';
+h += '<div class="divider"></div>';
+h += '<div class="totals">';
+h += '<p><span>Balance Before:</span><span class="receipt-amount">₦<?php echo number_format($payment_receipt['balance_before'], 2); ?></span></p>';
+h += '<p class="grand"><span>Payment Amount:</span><span class="receipt-amount">₦<?php echo number_format($payment_receipt['payment_amount'], 2); ?></span></p>';
+<?php if ($payment_receipt['transfer_amount'] > 0) : ?>
+h += '<p><span>  - Transfer (<?php echo esc_js($payment_receipt['bank_name']); ?>):</span><span class="receipt-amount">₦<?php echo number_format($payment_receipt['transfer_amount'], 2); ?></span></p>';
+<?php endif; ?>
+<?php if ($payment_receipt['cash_amount'] > 0) : ?>
+h += '<p><span>  - Cash:</span><span class="receipt-amount">₦<?php echo number_format($payment_receipt['cash_amount'], 2); ?></span></p>';
+<?php endif; ?>
+<?php if ($payment_receipt['home_amount'] > 0) : ?>
+h += '<p><span>  - Home Calc:</span><span class="receipt-amount">₦<?php echo number_format($payment_receipt['home_amount'], 2); ?></span></p>';
+<?php endif; ?>
+h += '<p class="grand"><span>New Balance:</span><span class="receipt-amount">₦<?php echo number_format($payment_receipt['new_balance'], 2); ?></span></p>';
+h += '</div>';
+h += '<div class="divider"></div>';
+h += '<div class="footer"><p class="thanks">Payment received with thanks!</p><p>Powered by BendlessTech</p></div>';
+h += '</div>';
+
+printWindow.document.write(h);
+printWindow.document.write('</body></html>');
+printWindow.document.close();
+printWindow.onload = function() {
+    setTimeout(function() { printWindow.print(); }, 300);
+};
 }
 
 function sendPayReceipt(){
