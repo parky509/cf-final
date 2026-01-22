@@ -1189,19 +1189,20 @@ class CFI_Ajax {
         foreach ($data as $item) {
             $type = sanitize_text_field($item['type'] ?? '');
             $payload = $item['data'] ?? array();
+            $item_id = sanitize_text_field($item['id'] ?? '');
             
             switch ($type) {
                 case 'order':
                     $payload = $this->sanitize_order_data($payload);
                     $result = CFI_Orders::submit($payload);
-                    $results[] = array('type' => $type, 'success' => $result['success']);
+                    $results[] = array('type' => $type, 'id' => $item_id, 'success' => $result['success']);
                     break;
                     
                 case 'debtor_order':
                     $debtor_id = absint($payload['debtor_id'] ?? 0);
                     $order_payload = $this->sanitize_order_data($payload);
                     $result = CFI_Debtors::add_order($debtor_id, $order_payload);
-                    $results[] = array('type' => $type, 'success' => $result['success']);
+                    $results[] = array('type' => $type, 'id' => $item_id, 'success' => $result['success']);
                     break;
                     
                 case 'debtor_payment':
@@ -1214,7 +1215,7 @@ class CFI_Ajax {
                         'bank_name' => sanitize_text_field($payload['bank_name'] ?? 'Moniepoint MFB'),
                     );
                     $result = CFI_Debtors::add_payment($debtor_id, $payment_payload);
-                    $results[] = array('type' => $type, 'success' => $result['success']);
+                    $results[] = array('type' => $type, 'id' => $item_id, 'success' => $result['success']);
                     break;
                     
                 case 'expense':
@@ -1222,7 +1223,7 @@ class CFI_Ajax {
                         sanitize_textarea_field($payload['description'] ?? ''),
                         floatval($payload['amount'] ?? 0)
                     );
-                    $results[] = array('type' => $type, 'success' => (bool) $result);
+                    $results[] = array('type' => $type, 'id' => $item_id, 'success' => (bool) $result);
                     break;
             }
         }

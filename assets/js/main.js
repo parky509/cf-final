@@ -900,16 +900,25 @@
     // Offline Support
     CFI.offline = {
         queue: [],
+        syncing: false,
 
         init: function() {
             this.loadQueue();
             this.initListeners();
+            // Sync immediately on page load if online and has pending items
+            if (navigator.onLine && this.queue.length > 0) {
+                this.syncQueue();
+            }
         },
 
         loadQueue: function() {
             const stored = localStorage.getItem('cfi_offline_queue');
             if (stored) {
-                this.queue = JSON.parse(stored);
+                try {
+                    this.queue = JSON.parse(stored);
+                } catch (e) {
+                    this.queue = [];
+                }
             }
         },
 
@@ -929,17 +938,61 @@
         },
 
         syncQueue: function() {
-            if (this.queue.length === 0) return Promise.resolve();
+            const self = this;
+            if (this.queue.length === 0 || this.syncing) return Promise.resolve();
+            
+            // Prevent multiple simultaneous syncs
+            this.syncing = true;
+            
+            // Copy queue for syncing
+            const itemsToSync = this.queue.slice();
 
             return CFI.ajax.request('sync_offline_data', {
-                data: JSON.stringify(this.queue)
-            }).then(function(data) {
-                CFI.offline.queue = [];
-                CFI.offline.saveQueue();
-                CFI.offline.updateBanner();
-                CFI.toast.success('Offline data synced successfully');
+                data: JSON.stringify(itemsToSync)
+            }).then(function(response) {
+                // Check which items succeeded using returned IDs
+                const results = response.results || [];
+                const successIds = [];
+                
+                results.forEach(function(result) {
+                    if (result.success && result.id) {
+                        successIds.push(result.id);
+                    }
+                });
+                
+                // Remove only successfully synced items
+                if (successIds.length > 0) {
+                    self.queue = self.queue.filter(function(item) {
+                        return successIds.indexOf(item.id) === -1;
+                    });
+                    self.saveQueue();
+                    self.updateBanner();
+                    
+                    if (successIds.length === itemsToSync.length) {
+                        CFI.toast.success('All offline data synced successfully');
+                    } else {
+                        CFI.toast.success(successIds.length + ' items synced. ' + (itemsToSync.length - successIds.length) + ' pending.');
+                    }
+                }
+                
+                // If there are still items, retry after a short delay
+                if (self.queue.length > 0) {
+                    setTimeout(function() {
+                        self.syncing = false;
+                        self.syncQueue();
+                    }, 3000);
+                } else {
+                    self.syncing = false;
+                }
             }).catch(function(error) {
-                CFI.toast.error('Failed to sync offline data');
+                self.syncing = false;
+                CFI.toast.error('Failed to sync offline data. Will retry...');
+                // Retry after 5 seconds on failure
+                setTimeout(function() {
+                    if (navigator.onLine) {
+                        self.syncQueue();
+                    }
+                }, 5000);
             });
         },
 
@@ -948,7 +1001,10 @@
 
             window.addEventListener('online', function() {
                 $('#cfi-offline-banner').removeClass('visible');
-                self.syncQueue();
+                // Sync immediately when coming online
+                setTimeout(function() {
+                    self.syncQueue();
+                }, 500);
             });
 
             window.addEventListener('offline', function() {
@@ -959,11 +1015,23 @@
             if (!navigator.onLine) {
                 $('#cfi-offline-banner').addClass('visible');
             }
+            
+            // Also sync on visibility change (user returns to tab)
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden && navigator.onLine && self.queue.length > 0) {
+                    self.syncQueue();
+                }
+            });
         },
 
         updateBanner: function() {
-            if (this.queue.length > 0) {
-                $('#cfi-offline-count').text(this.queue.length);
+            const count = this.queue.length;
+            if (count > 0) {
+                $('#cfi-offline-count').text('(' + count + ' pending)');
+                $('#cfi-offline-banner').addClass('has-pending');
+            } else {
+                $('#cfi-offline-count').text('');
+                $('#cfi-offline-banner').removeClass('has-pending');
             }
         }
     };
