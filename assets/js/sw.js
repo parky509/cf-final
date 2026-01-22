@@ -3,7 +3,7 @@
  * Aggressive caching for blazing fast load times
  */
 
-const CACHE_NAME = 'cfi-cache-v6';
+const CACHE_NAME = 'cfi-cache-v7';
 const OFFLINE_URL = '/offline.html';
 
 // Static assets to cache immediately
@@ -82,6 +82,8 @@ self.addEventListener('fetch', function(event) {
     // NEVER cache dynamic pages - always fetch fresh data
     // These pages must show real-time data without cache delays
     const noCachePages = [
+        'login',
+        'cfi-login',
         'transfer-history',
         'financial-summary',
         'financial-history',

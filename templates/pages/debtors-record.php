@@ -801,7 +801,6 @@ function printDebtorOfflineReceipt() {
         var receipt = JSON.parse(modal.dataset.receipt);
         var type = modal.dataset.receiptType || 'order';
         
-        var w = window.open('', '_blank', 'width=350,height=700');
         var h = '<!DOCTYPE html><html><head><title>Print Receipt</title>';
         h += '<style>';
         h += '@page{size:80mm auto;margin:0}';
@@ -876,22 +875,34 @@ function printDebtorOfflineReceipt() {
         h += '<div class="footer"><p class="thanks">Thank you for your patronage!</p><p style="margin-top:5px;font-size:9px">Powered by BendlessTech</p></div>';
         h += '</div>';
         h += '</body></html>';
-        w.document.write(h);
-        w.document.close();
-        w.onload = function() { setTimeout(function() { w.print(); }, 300); };
+        
+        // Try opening popup first (works better on some tablets)
+        var w = window.open('', 'printReceipt', 'width=350,height=700,scrollbars=yes');
+        if (w && !w.closed) {
+            w.document.write(h);
+            w.document.close();
+            w.onload = function() { setTimeout(function() { w.print(); }, 300); };
+            // Focus the window
+            w.focus();
+        } else {
+            // Popup blocked - use iframe method for tablets
+            var iframe = document.createElement('iframe');
+            iframe.style.cssText = 'position:absolute;width:0;height:0;border:0;';
+            document.body.appendChild(iframe);
+            var doc = iframe.contentWindow.document;
+            doc.open();
+            doc.write(h);
+            doc.close();
+            iframe.contentWindow.onload = function() {
+                setTimeout(function() {
+                    iframe.contentWindow.print();
+                    setTimeout(function() { document.body.removeChild(iframe); }, 1000);
+                }, 300);
+            };
+        }
     } catch(e) {
         console.error('Error printing offline receipt:', e);
-        // Fallback to old method
-        var printArea = document.getElementById('debtor-offline-receipt-print-area');
-        if (!printArea) return;
-        var w = window.open('', '_blank', 'width=400,height=600');
-        w.document.write('<!DOCTYPE html><html><head><title>Print Receipt</title>');
-        w.document.write('<style>@page{size:80mm auto;margin:0}body{margin:0;padding:0;font-family:Arial,sans-serif;}</style>');
-        w.document.write('</head><body>');
-        w.document.write(printArea.innerHTML);
-        w.document.write('</body></html>');
-        w.document.close();
-        w.onload = function() { setTimeout(function() { w.print(); }, 300); };
+        alert('Unable to print receipt. Please try again.');
     }
 }
 </script>
@@ -1166,7 +1177,6 @@ function printPaymentOfflineReceipt() {
     try {
         var receipt = JSON.parse(modal.dataset.receipt);
         
-        var w = window.open('', '_blank', 'width=350,height=700');
         var h = '<!DOCTYPE html><html><head><title>Print Receipt</title>';
         h += '<style>';
         h += '@page{size:80mm auto;margin:0}';
@@ -1221,22 +1231,36 @@ function printPaymentOfflineReceipt() {
         h += '<div class="offline-note">📱 Submitted Offline - Will sync when online</div>';
         h += '<div class="footer"><p>Payment received with thanks!</p><p style="margin-top:5px">Powered by BendlessTech</p></div>';
         h += '</div></body></html>';
-        w.document.write(h);
-        w.document.close();
-        w.onload = function() { setTimeout(function() { w.print(); }, 300); };
+        
+        // Try opening popup first (works better on some tablets)
+        var w = window.open('', 'printReceipt', 'width=350,height=700,scrollbars=yes');
+        if (w && !w.closed) {
+            w.document.write(h);
+            w.document.close();
+            w.onload = function() { setTimeout(function() { w.print(); }, 300); };
+            // Focus the window
+            w.focus();
+        } else {
+            // Popup blocked - use iframe method for tablets
+            var iframe = document.createElement('iframe');
+            iframe.style.cssText = 'position:absolute;width:0;height:0;border:0;';
+            document.body.appendChild(iframe);
+            var doc = iframe.contentWindow.document;
+            doc.open();
+            doc.write(h);
+            doc.close();
+            iframe.contentWindow.onload = function() {
+                setTimeout(function() {
+                    iframe.contentWindow.print();
+                    setTimeout(function() { document.body.removeChild(iframe); }, 1000);
+                }, 300);
+            };
+        }
     } catch(e) {
         console.error('Error printing offline receipt:', e);
-        // Fallback to old method
-        var printArea = document.getElementById('payment-offline-receipt-print-area');
-        if (!printArea) return;
-        var w = window.open('', '_blank', 'width=400,height=600');
-        w.document.write('<!DOCTYPE html><html><head><title>Print Receipt</title>');
-        w.document.write('<style>@page{size:80mm auto;margin:0}body{margin:0;padding:0;font-family:Arial,sans-serif;}</style>');
-        w.document.write('</head><body>');
-        w.document.write(printArea.innerHTML);
-        w.document.write('</body></html>');
-        w.document.close();
-        w.onload = function() { setTimeout(function() { w.print(); }, 300); };
+        alert('Unable to print receipt. Please try again.');
+    }
+}
     }
 }
 </script>
