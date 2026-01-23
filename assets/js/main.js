@@ -854,7 +854,7 @@
             const fromPacking = parseFloat(row.find('td:eq(8) input').val()) || 0;
 
             const closing = opening + importQty - cashSupply - creditSupply + notSupplied - suppliedToday - toPacking + fromPacking;
-            row.find('.cfi-closing').val(Math.round(closing));
+            row.find('.cfi-closing').val(closing.toFixed(1));
         },
 
         initSubmit: function() {
