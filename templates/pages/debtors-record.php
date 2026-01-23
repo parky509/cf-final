@@ -938,9 +938,7 @@ function printDebtorOfflineReceipt() {
 <div class="payment-methods">
 <div class="payment-method selected" data-method="transfer" onclick="togglePay(this)"><input type="checkbox" name="use_transfer" id="use_transfer" style="display:none" checked><i class="fas fa-credit-card"></i><span>Transfer/Card</span></div>
 <div class="payment-method" data-method="cash" onclick="togglePay(this)"><input type="checkbox" name="use_cash" id="use_cash" style="display:none"><i class="fas fa-money-bill-wave"></i><span>Cash</span></div>
-<?php if ($is_admin) : ?>
 <div class="payment-method" data-method="home" onclick="togglePay(this)"><input type="checkbox" name="use_home" id="use_home" style="display:none"><i class="fas fa-home"></i><span>Home Calc</span></div>
-<?php endif; ?>
 </div>
 <div class="bank-options" id="bank-opts" style="display:block">
 <h4 style="color:#001943">Select Bank</h4>
@@ -950,12 +948,8 @@ function printDebtorOfflineReceipt() {
 <div id="pay-amounts">
 <div class="form-group" id="transfer-grp" style="display:block"><label>Transfer Amount (₦)</label><input type="number" id="transfer_amount" name="transfer_amount" class="input" value="0" min="0" step="0.01" oninput="updatePayTotal()"></div>
 <div class="form-group" id="cash-grp" style="display:none"><label>Cash Amount (₦)</label><input type="number" id="cash_amount" name="cash_amount" class="input" value="0" min="0" step="0.01" oninput="updatePayTotal()"></div>
-<?php if ($is_admin) : ?>
 <div class="form-group" id="home-grp" style="display:none"><label>Home Calculation (₦)</label><input type="number" id="home_amount" name="home_amount" class="input" value="0" min="0" step="0.01" oninput="updatePayTotal()"></div>
 <div class="form-group" id="home-remarks-grp" style="display:none"><label>Home Reconciliation Remarks</label><textarea id="home_remarks" name="home_remarks" class="input" rows="3" placeholder="Enter remarks for home reconciliation..."></textarea></div>
-<?php else : ?>
-<input type="hidden" name="home_amount" value="0">
-<?php endif; ?>
 </div>
 <div style="margin-top:1rem;padding:1rem;background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;border-radius:8px;text-align:center"><span style="font-size:0.9rem">Total Payment:</span><strong id="pay-total" style="font-size:1.5rem;display:block">₦0</strong></div>
 <div id="pay-warn" style="display:none;margin-top:0.5rem;padding:0.75rem;border-radius:8px;font-size:0.85rem"></div>

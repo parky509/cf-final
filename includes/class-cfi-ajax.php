@@ -688,11 +688,6 @@ class CFI_Ajax {
             wp_send_json_error(array('message' => __('Invalid debtor ID', 'chinemerem-foods')));
         }
         
-        // Only admin can use home calculation
-        if ($home_calculation > 0 && !CFI_Auth::is_cfi_admin()) {
-            wp_send_json_error(array('message' => __('Only admin can use home calculation', 'chinemerem-foods')));
-        }
-        
         $result = CFI_Debtors::add_payment($debtor_id, array(
             'amount' => $amount,
             'payment_method' => $payment_method,
