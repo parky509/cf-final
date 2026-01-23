@@ -14,17 +14,27 @@ $is_super_admin = CFI_Auth::is_super_admin();
 $message = '';
 $message_type = '';
 
-// Handle Delete Action
+// Handle Delete Action - Only same-day deletion allowed
 if (isset($_POST['cfi_delete_order']) && $is_super_admin && wp_verify_nonce($_POST['cfi_delete_nonce'], 'cfi_delete_order')) {
     global $wpdb;
     $order_id = intval($_POST['order_id']);
     $orders_table = $wpdb->prefix . 'cfi_orders';
-    $result = $wpdb->delete($orders_table, array('id' => $order_id), array('%d'));
-    if ($result) {
-        $message = 'Order deleted successfully';
-        $message_type = 'success';
+    
+    // Check if order is from today
+    $order_date = $wpdb->get_var($wpdb->prepare("SELECT order_date FROM $orders_table WHERE id = %d", $order_id));
+    $today = current_time('Y-m-d');
+    
+    if ($order_date === $today) {
+        $result = $wpdb->delete($orders_table, array('id' => $order_id), array('%d'));
+        if ($result) {
+            $message = 'Order deleted successfully';
+            $message_type = 'success';
+        } else {
+            $message = 'Failed to delete order';
+            $message_type = 'error';
+        }
     } else {
-        $message = 'Failed to delete order';
+        $message = 'Cannot delete orders from previous days';
         $message_type = 'error';
     }
 }
@@ -213,11 +223,15 @@ foreach ($orders as $order) {
                         </td>
                         <?php if ($is_super_admin) : ?>
                         <td>
+                            <?php if ($order->order_date === $today) : ?>
                             <form method="POST" style="display: inline;" onsubmit="return confirm('Delete this order? This cannot be undone.');">
                                 <?php wp_nonce_field('cfi_delete_order', 'cfi_delete_nonce'); ?>
                                 <input type="hidden" name="order_id" value="<?php echo esc_attr($order->id); ?>">
                                 <button type="submit" name="cfi_delete_order" class="action-btn btn-delete"><i class="fas fa-trash"></i></button>
                             </form>
+                            <?php else : ?>
+                            <span style="color: #94a3b8; font-size: 0.7rem;">-</span>
+                            <?php endif; ?>
                         </td>
                         <?php endif; ?>
                     </tr>

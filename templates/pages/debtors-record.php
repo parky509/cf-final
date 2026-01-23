@@ -212,6 +212,7 @@ if (isset($_POST['cfi_clear_debt_submit']) && wp_verify_nonce($_POST['cfi_clear_
     $cash_amount = $use_cash ? floatval($_POST['cash_amount']) : 0;
     $home_amount = $use_home ? floatval($_POST['home_amount']) : 0;
     $bank_name = sanitize_text_field($_POST['bank_name']);
+    $home_remarks = isset($_POST['home_remarks']) ? sanitize_textarea_field($_POST['home_remarks']) : '';
     $total_payment = $transfer_amount + $cash_amount + $home_amount;
     
     if ($total_payment > 0) {
@@ -249,6 +250,7 @@ if (isset($_POST['cfi_clear_debt_submit']) && wp_verify_nonce($_POST['cfi_clear_
                     'transfer_amount' => $transfer_amount,
                     'cash_amount' => $cash_amount,
                     'home_calculation_amount' => $home_amount,
+                    'home_remarks' => $home_remarks,
                     'balance_before' => $balance_before,
                     'balance_after' => $new_balance,
                     'description' => 'Debt payment received',
@@ -256,7 +258,7 @@ if (isset($_POST['cfi_clear_debt_submit']) && wp_verify_nonce($_POST['cfi_clear_
                     'transaction_date' => current_time('Y-m-d'),
                     'transaction_time' => current_time('H:i:s')
                 ),
-                array('%d', '%s', '%f', '%s', '%s', '%f', '%f', '%f', '%f', '%f', '%s', '%d', '%s', '%s')
+                array('%d', '%s', '%f', '%s', '%s', '%f', '%f', '%f', '%s', '%f', '%f', '%s', '%d', '%s', '%s')
             );
             
             // Record transfer if applicable
@@ -950,6 +952,7 @@ function printDebtorOfflineReceipt() {
 <div class="form-group" id="cash-grp" style="display:none"><label>Cash Amount (₦)</label><input type="number" id="cash_amount" name="cash_amount" class="input" value="0" min="0" step="0.01" oninput="updatePayTotal()"></div>
 <?php if ($is_admin) : ?>
 <div class="form-group" id="home-grp" style="display:none"><label>Home Calculation (₦)</label><input type="number" id="home_amount" name="home_amount" class="input" value="0" min="0" step="0.01" oninput="updatePayTotal()"></div>
+<div class="form-group" id="home-remarks-grp" style="display:none"><label>Home Reconciliation Remarks</label><textarea id="home_remarks" name="home_remarks" class="input" rows="3" placeholder="Enter remarks for home reconciliation..."></textarea></div>
 <?php else : ?>
 <input type="hidden" name="home_amount" value="0">
 <?php endif; ?>
@@ -979,7 +982,9 @@ function togglePay(el){
         if(!c.checked)document.getElementById('cash_amount').value=0;
     } else if(m==='home'){
         var hg=document.getElementById('home-grp');
+        var hrg=document.getElementById('home-remarks-grp');
         if(hg){hg.style.display=c.checked?'block':'none';if(!c.checked)document.getElementById('home_amount').value=0}
+        if(hrg){hrg.style.display=c.checked?'block':'none';if(!c.checked)document.getElementById('home_remarks').value=''}
     }
     updatePayTotal();
 }
@@ -1032,13 +1037,17 @@ function submitDebtorPaymentOffline() {
     var currentDebt = <?php echo floatval($selected_debtor->display_debt); ?>;
     var newBalance = currentDebt - totalPayment;
     
+    var homeRemarksEl = document.getElementById('home_remarks');
+    var homeRemarks = homeRemarksEl ? homeRemarksEl.value : '';
+    
     var payload = {
         debtor_id: <?php echo (int)$selected_debtor->id; ?>,
         transfer_amount: transferAmount,
         cash_amount: cashAmount,
         home_calculation: homeAmount,
         payment_method: paymentMethod,
-        bank_name: bankName
+        bank_name: bankName,
+        home_remarks: homeRemarks
     };
     
     var receipt = {
@@ -1053,6 +1062,7 @@ function submitDebtorPaymentOffline() {
         home_amount: homeAmount,
         bank_name: bankName,
         new_balance: newBalance,
+        home_remarks: homeRemarks,
         staff: (window.cfiData && cfiData.currentUser) ? cfiData.currentUser : ''
     };
     

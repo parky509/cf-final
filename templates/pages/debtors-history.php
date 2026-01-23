@@ -32,15 +32,25 @@ $debtors_table = $wpdb->prefix . 'cfi_debtors';
 $orders_table = $wpdb->prefix . 'cfi_orders';
 $order_items_table = $wpdb->prefix . 'cfi_order_items';
 
-// Handle Delete Action
+// Handle Delete Action - Only same-day deletion allowed
 if (isset($_POST['cfi_delete_trans']) && $is_super_admin && wp_verify_nonce($_POST['cfi_del_nonce'], 'cfi_del_trans')) {
     $trans_id = intval($_POST['trans_id']);
-    $result = $wpdb->delete($trans_table, array('id' => $trans_id), array('%d'));
-    if ($result) {
-        $message = 'Transaction deleted';
-        $message_type = 'success';
+    
+    // Check if transaction is from today
+    $trans_date = $wpdb->get_var($wpdb->prepare("SELECT transaction_date FROM $trans_table WHERE id = %d", $trans_id));
+    $today = current_time('Y-m-d');
+    
+    if ($trans_date === $today) {
+        $result = $wpdb->delete($trans_table, array('id' => $trans_id), array('%d'));
+        if ($result) {
+            $message = 'Transaction deleted';
+            $message_type = 'success';
+        } else {
+            $message = 'Delete failed';
+            $message_type = 'error';
+        }
     } else {
-        $message = 'Delete failed';
+        $message = 'Cannot delete transactions from previous days';
         $message_type = 'error';
     }
 }
@@ -179,6 +189,7 @@ table td:before{content:attr(data-label);font-weight:600;color:#001943}
 <?php if (empty($history)) : ?>
 <div class="empty"><i class="fas fa-inbox"></i><h3>No Transaction History</h3><p>Debtor transactions will appear here.</p></div>
 <?php else : ?>
+<?php $today = current_time('Y-m-d'); ?>
 <div style="overflow-x:auto">
 <table>
 <thead><tr><th>Date</th><th>Time</th><th>Debtor</th><th>Type</th><th>Amount</th><th>Before</th><th>After</th><th>Order</th><th>Payment</th><th>Send</th><th>Staff</th><?php if ($is_super_admin) : ?><th>Action</th><?php endif; ?></tr></thead>
@@ -217,7 +228,13 @@ $icon = $type === 'order' ? 'cart-plus' : ($type === 'payment' ? 'money-check' :
 </td>
 <td data-label="Staff"><?php echo esc_html($rec->staff_name ?: '-'); ?></td>
 <?php if ($is_super_admin) : ?>
-<td><form method="POST" style="display:inline" onsubmit="return confirm('Delete this?')"><input type="hidden" name="trans_id" value="<?php echo esc_attr($rec->id); ?>"><?php wp_nonce_field('cfi_del_trans', 'cfi_del_nonce'); ?><button type="submit" name="cfi_delete_trans" class="action-btn btn-del"><i class="fas fa-trash"></i></button></form></td>
+<td>
+<?php if ($rec->transaction_date === $today) : ?>
+<form method="POST" style="display:inline" onsubmit="return confirm('Delete this?')"><input type="hidden" name="trans_id" value="<?php echo esc_attr($rec->id); ?>"><?php wp_nonce_field('cfi_del_trans', 'cfi_del_nonce'); ?><button type="submit" name="cfi_delete_trans" class="action-btn btn-del"><i class="fas fa-trash"></i></button></form>
+<?php else : ?>
+<span style="color:#94a3b8;font-size:0.7rem">-</span>
+<?php endif; ?>
+</td>
 <?php endif; ?>
 </tr>
 <?php endforeach; ?>
@@ -250,6 +267,7 @@ foreach ($history as $rec) {
             'transfer_amount' => $rec->transfer_amount,
             'bank_name' => $rec->bank_name,
             'home_amount' => $rec->home_calculation_amount,
+            'home_remarks' => isset($rec->home_remarks) ? $rec->home_remarks : '',
             'balance_before' => $rec->balance_before,
             'balance_after' => $rec->balance_after,
             'transaction_date' => $rec->transaction_date,
@@ -313,9 +331,11 @@ function buildPaymentReceiptHtml(p){
     var transferAmount=parseFloat(p.transfer_amount)||0;
     var cashAmount=parseFloat(p.cash_amount)||0;
     var homeAmount=parseFloat(p.home_amount)||0;
+    var homeRemarks=p.home_remarks||'';
     var transferLine=transferAmount>0?'<p><span>Transfer:</span><span class="receipt-amount">₦'+formatReceiptNumber(transferAmount)+'</span></p>':'';
     var cashLine=cashAmount>0?'<p><span>Cash:</span><span class="receipt-amount">₦'+formatReceiptNumber(cashAmount)+'</span></p>':'';
     var homeLine=homeAmount>0?'<p><span>Home Calculation:</span><span class="receipt-amount">₦'+formatReceiptNumber(homeAmount)+'</span></p>':'';
+    var homeRemarksLine=homeRemarks?'<p><span>Home Remarks:</span><span style="font-style:italic;color:#64748b">'+escapeHtml(homeRemarks)+'</span></p>':'';
     var bankLine=p.bank_name&&transferAmount>0?'<p><span>Bank:</span><span>'+escapeHtml(p.bank_name)+'</span></p>':'';
     var html='';
     html+='<div class="receipt-company"><h2>'+cfiCompanyName+'</h2><p>'+cfiCompanyTagline+'</p></div>';
@@ -332,7 +352,7 @@ function buildPaymentReceiptHtml(p){
     html+='<p><span>Balance Before:</span><span class="receipt-amount" style="color:#dc2626">₦'+formatReceiptNumber(p.balance_before||0)+'</span></p>';
     html+='<p class="grand"><span>Payment Amount:</span><span class="receipt-amount">₦'+formatReceiptNumber(p.amount||0)+'</span></p>';
     html+='<p><span>Method:</span><span>'+escapeHtml(method)+'</span></p>';
-    html+=transferLine+cashLine+homeLine+bankLine;
+    html+=transferLine+cashLine+homeLine+homeRemarksLine+bankLine;
     html+='</div>';
     html+='<div class="receipt-divider"></div>';
     html+='<div class="receipt-info"><p><span>New Balance:</span><span class="receipt-amount">₦'+formatReceiptNumber(p.balance_after||0)+'</span></p></div>';

@@ -209,6 +209,7 @@ class CFI_Database {
             transfer_amount decimal(15,2) DEFAULT 0.00,
             cash_amount decimal(15,2) DEFAULT 0.00,
             home_calculation_amount decimal(15,2) DEFAULT 0.00,
+            home_remarks text DEFAULT '',
             balance_before decimal(15,2) NOT NULL DEFAULT 0.00,
             balance_after decimal(15,2) NOT NULL DEFAULT 0.00,
             description text DEFAULT '',
@@ -222,6 +223,13 @@ class CFI_Database {
             KEY transaction_type (transaction_type)
         ) $charset_collate;";
         dbDelta($sql_debtor_trans);
+        
+        // Add home_remarks column if it doesn't exist
+        $table_dt = $wpdb->prefix . 'cfi_debtor_transactions';
+        $row_dt = $wpdb->get_results("SHOW COLUMNS FROM `$table_dt` LIKE 'home_remarks'");
+        if (empty($row_dt)) {
+            $wpdb->query("ALTER TABLE `$table_dt` ADD COLUMN `home_remarks` text DEFAULT '' AFTER `home_calculation_amount`");
+        }
         
         // Expenses table
         $table_expenses = $wpdb->prefix . 'cfi_expenses';
