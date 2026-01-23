@@ -100,8 +100,6 @@ foreach ($orders as $order) {
         tr:hover { background: #f8fafc; }
         .order-num { font-weight: 600; color: #001943; }
         .amount { font-weight: 600; color: #16a34a; }
-        .type-cash { color: #16a34a; font-weight: 600; }
-        .type-credit { color: #dc2626; font-weight: 600; }
         .btn-print { background: #7c3aed; color: white; }
         .btn-print:hover { background: #6d28d9; }
         .action-btn { padding: 0.25rem 0.4rem; border: none; border-radius: 4px; cursor: pointer; font-size: 0.7rem; margin: 0.1rem; }
@@ -191,7 +189,6 @@ foreach ($orders as $order) {
                         <th>Order #</th>
                         <th>Date</th>
                         <th>Time</th>
-                        <th>Type</th>
                         <th>Customer</th>
                         <th>Items</th>
                         <th>Total (₦)</th>
@@ -203,14 +200,13 @@ foreach ($orders as $order) {
                 </thead>
                 <tbody>
                     <?php if (empty($orders)) : ?>
-                    <tr><td colspan="<?php echo $is_super_admin ? '11' : '10'; ?>" class="empty">No orders found for this period</td></tr>
+                    <tr><td colspan="<?php echo $is_super_admin ? '10' : '9'; ?>" class="empty">No orders found for this period</td></tr>
                     <?php else : ?>
                     <?php foreach ($orders as $order) : ?>
                     <tr>
                         <td class="order-num"><?php echo esc_html($order->order_number); ?></td>
                         <td><?php echo esc_html($order->order_date); ?></td>
                         <td><?php echo esc_html(cfi_format_receipt_time($order->order_date, $order->order_time)); ?></td>
-                        <td class="type-<?php echo esc_attr($order->order_type); ?>"><?php echo ucfirst(esc_html($order->order_type)); ?></td>
                         <td><?php echo esc_html($order->customer_name ?: '-'); ?></td>
                         <td><?php echo esc_html($order->total_quantity ?: '-'); ?></td>
                         <td class="amount">₦<?php echo number_format($order->grand_total, 0); ?></td>
