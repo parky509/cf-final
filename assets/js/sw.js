@@ -3,7 +3,7 @@
  * Aggressive caching for blazing fast load times
  */
 
-const CACHE_NAME = 'cfi-cache-v19';
+const CACHE_NAME = 'cfi-cache-v20';
 const OFFLINE_URL = '/offline.html';
 
 // Static assets to cache immediately
@@ -123,25 +123,19 @@ self.addEventListener('fetch', function(event) {
         return;
     }
 
-    // Use stale-while-revalidate for HTML pages (instant load + background update)
+    // NETWORK-FIRST for ALL HTML pages - always get fresh data from server
+    // This ensures login, logout, form submissions all work without clearing cache
     if (event.request.mode === 'navigate' || 
         event.request.headers.get('accept').includes('text/html')) {
         event.respondWith(
-            caches.match(event.request).then(function(cachedResponse) {
-                const fetchPromise = fetch(event.request).then(function(networkResponse) {
-                    if (networkResponse && networkResponse.status === 200) {
-                        const responseToCache = networkResponse.clone();
-                        caches.open(CACHE_NAME).then(function(cache) {
-                            cache.put(event.request, responseToCache);
-                        });
-                    }
-                    return networkResponse;
-                }).catch(function() {
+            fetch(event.request).then(function(networkResponse) {
+                // Got fresh response from server - use it
+                return networkResponse;
+            }).catch(function() {
+                // Network failed - try cache as fallback for offline support
+                return caches.match(event.request).then(function(cachedResponse) {
                     return cachedResponse || caches.match(OFFLINE_URL);
                 });
-                
-                // Return cached response immediately, update in background
-                return cachedResponse || fetchPromise;
             })
         );
         return;
