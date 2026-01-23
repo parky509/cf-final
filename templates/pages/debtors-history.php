@@ -193,9 +193,9 @@ $icon = $type === 'order' ? 'cart-plus' : ($type === 'payment' ? 'money-check' :
 <td data-label="Time"><?php echo esc_html(cfi_format_receipt_time($rec->transaction_date, $rec->transaction_time)); ?></td>
 <td data-label="Debtor"><?php echo esc_html($rec->debtor_name ?: 'Unknown'); ?></td>
 <td data-label="Type"><span class="badge <?php echo esc_attr($badge); ?>"><i class="fas fa-<?php echo esc_attr($icon); ?>"></i> <?php echo esc_html(ucfirst($type)); ?></span></td>
-<td data-label="Amount" style="font-weight:600;color:<?php echo $type === 'order' ? '#dc2626' : '#16a34a'; ?>"><?php echo $type === 'order' ? '+' : '-'; ?>₦<?php echo number_format((float)$rec->amount, 2); ?></td>
-<td data-label="Before">₦<?php echo number_format((float)$rec->balance_before, 2); ?></td>
-<td data-label="After" style="font-weight:600">₦<?php echo number_format((float)$rec->balance_after, 2); ?></td>
+<td data-label="Amount" style="font-weight:600;color:<?php echo $type === 'order' ? '#dc2626' : '#16a34a'; ?>"><?php echo $type === 'order' ? '+' : '-'; ?>₦<?php echo number_format((float)$rec->amount, 0); ?></td>
+<td data-label="Before">₦<?php echo number_format((float)$rec->balance_before, 0); ?></td>
+<td data-label="After" style="font-weight:600">₦<?php echo number_format((float)$rec->balance_after, 0); ?></td>
 <td data-label="Order">
 <?php if ($type === 'order' && $rec->order_id) : ?>
 <button type="button" class="action-btn btn-view" onclick="viewOrder(<?php echo esc_attr($rec->order_id); ?>)"><i class="fas fa-eye"></i></button>

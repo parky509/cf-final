@@ -22,8 +22,8 @@
             const key = String(number);
             if (this._numberCache[key]) return this._numberCache[key];
             const result = parseFloat(number || 0).toLocaleString('en-NG', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
             });
             this._numberCache[key] = result;
             return result;
@@ -527,7 +527,7 @@
                             <input type="number" class="cfi-input cfi-discount-input" min="0" step="0.01" value="0">
                         </td>
                         <td data-label="Total">
-                            <span class="cfi-row-total">₦0.00</span>
+                            <span class="cfi-row-total">₦0</span>
                         </td>
                     </tr>
                 `);
@@ -854,7 +854,7 @@
             const fromPacking = parseFloat(row.find('td:eq(8) input').val()) || 0;
 
             const closing = opening + importQty - cashSupply - creditSupply + notSupplied - suppliedToday - toPacking + fromPacking;
-            row.find('.cfi-closing').val(closing.toFixed(2));
+            row.find('.cfi-closing').val(Math.round(closing));
         },
 
         initSubmit: function() {

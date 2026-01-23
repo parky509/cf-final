@@ -209,9 +209,7 @@ if (isset($_GET['order_success']) && $_GET['order_success'] === '1' && isset($_G
 
 if (!function_exists('cfi_format_receipt_value')) {
     function cfi_format_receipt_value($value) {
-        $formatted = number_format((float) $value, 2, '.', ',');
-        $formatted = rtrim(rtrim($formatted, '0'), '.');
-        return $formatted === '' ? '0' : $formatted;
+        return number_format((float) $value, 0);
     }
 }
 

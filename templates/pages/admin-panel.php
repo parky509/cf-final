@@ -155,7 +155,7 @@ if (isset($_POST['cfi_add_debtor_submit']) && wp_verify_nonce($_POST['cfi_debtor
                     array('%d', '%s', '%f', '%f', '%f', '%s', '%d', '%s', '%s')
                 );
             }
-            $message = 'Debtor "' . esc_html($debtor_name) . '" added with initial debt: ₦' . number_format($initial_debt, 2);
+            $message = 'Debtor "' . esc_html($debtor_name) . '" added with initial debt: ₦' . number_format($initial_debt, 0);
             $message_type = 'success';
         } else {
             $message = 'Failed to add debtor. Database error: ' . $wpdb->last_error;
@@ -187,7 +187,7 @@ if (isset($_POST['cfi_update_debtor_debt']) && wp_verify_nonce($_POST['cfi_updat
                 'amount' => abs($new_debt - $old_debt),
                 'balance_before' => $old_debt,
                 'balance_after' => $new_debt,
-                'description' => 'Admin adjusted debt from ₦' . number_format($old_debt, 2) . ' to ₦' . number_format($new_debt, 2),
+                'description' => 'Admin adjusted debt from ₦' . number_format($old_debt, 0) . ' to ₦' . number_format($new_debt, 0),
                 'staff_id' => get_current_user_id(),
                 'transaction_date' => current_time('Y-m-d'),
                 'transaction_time' => current_time('H:i:s')
@@ -311,7 +311,7 @@ $is_super_admin = CFI_Auth::is_super_admin();
                 </div>
                 <div class="cfi-form-group" style="flex: 1; min-width: 120px; margin: 0;">
                     <label for="product_price" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #001943;">Price (₦)</label>
-                    <input type="number" id="product_price" name="product_price" class="cfi-input" step="0.01" min="0.01" placeholder="0.00" required style="width: 100%; padding: 0.75rem; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 1rem;">
+                    <input type="number" id="product_price" name="product_price" class="cfi-input cfi-price-input" step="1" min="1" placeholder="0" required style="width: 100%; padding: 0.75rem; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 1rem;">
                 </div>
                 <button type="submit" name="cfi_add_product_submit" class="cfi-btn cfi-btn-success" style="background: #001943; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem;">
                     <i class="fa-solid fa-plus"></i>
@@ -341,7 +341,7 @@ $is_super_admin = CFI_Auth::is_super_admin();
                         <?php foreach ($products as $product) : ?>
                         <tr style="border-bottom: 1px solid #e2e8f0;">
                             <td style="padding: 0.75rem;"><?php echo esc_html($product->name); ?></td>
-                            <td style="padding: 0.75rem;">₦<?php echo number_format((float)$product->price, 2); ?></td>
+                            <td style="padding: 0.75rem;">₦<?php echo number_format((float)$product->price, 0); ?></td>
                             <td style="padding: 0.75rem;">
                                 <span style="display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; background: <?php echo $product->status === 'active' ? '#dcfce7' : '#fee2e2'; ?>; color: <?php echo $product->status === 'active' ? '#166534' : '#991b1b'; ?>;">
                                     <?php echo ucfirst($product->status); ?>
@@ -414,7 +414,7 @@ $is_super_admin = CFI_Auth::is_super_admin();
                         <tr style="border-bottom: 1px solid #e2e8f0;">
                             <td style="padding: 0.75rem;"><?php echo esc_html($debtor->name); ?></td>
                             <td style="padding: 0.75rem;"><?php echo esc_html($debtor->phone); ?></td>
-                            <td style="padding: 0.75rem; color: <?php echo $debtor->total_debt > 0 ? '#dc2626' : '#16a34a'; ?>; font-weight: 600;">₦<?php echo number_format((float)$debtor->total_debt, 2); ?></td>
+                            <td style="padding: 0.75rem; color: <?php echo $debtor->total_debt > 0 ? '#dc2626' : '#16a34a'; ?>; font-weight: 600;">₦<?php echo number_format((float)$debtor->total_debt, 0); ?></td>
                             <td style="padding: 0.75rem;">
                                 <button type="button" class="cfi-edit-debtor" data-id="<?php echo esc_attr($debtor->id); ?>" data-name="<?php echo esc_attr($debtor->name); ?>" data-debt="<?php echo esc_attr($debtor->total_debt); ?>" style="background: #f59e0b; color: white; border: none; padding: 0.5rem 0.75rem; border-radius: 6px; cursor: pointer; margin-right: 0.25rem;" title="Edit Debt Amount">
                                     <i class="fa-solid fa-pen"></i>

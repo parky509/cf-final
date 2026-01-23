@@ -331,9 +331,7 @@ if (isset($_GET['pay_done']) && isset($_GET['pk'])) {
 
 if (!function_exists('cfi_format_receipt_value')) {
     function cfi_format_receipt_value($value) {
-        $formatted = number_format((float) $value, 2, '.', ',');
-        $formatted = rtrim(rtrim($formatted, '0'), '.');
-        return $formatted === '' ? '0' : $formatted;
+        return number_format((float) $value, 0);
     }
 }
 
@@ -509,7 +507,7 @@ if (window.history.replaceState) {
 <?php if ($selected_debtor && $action === 'order') : ?>
 <div class="glass">
 <h3 style="color:#001943;margin-top:0"><i class="fas fa-shopping-cart"></i> Order Items</h3>
-<p><strong>Current Debt:</strong> <span class="cfi-debtor-balance" data-debtor-id="<?php echo esc_attr($selected_debtor->id); ?>" style="color:#dc2626">₦<?php echo number_format($selected_debtor->display_debt, 2); ?></span></p>
+<p><strong>Current Debt:</strong> <span class="cfi-debtor-balance" data-debtor-id="<?php echo esc_attr($selected_debtor->id); ?>" style="color:#dc2626">₦<?php echo number_format($selected_debtor->display_debt, 0); ?></span></p>
 <form method="POST" id="order-form">
 <?php wp_nonce_field('cfi_debtor_order', 'cfi_debtor_order_nonce'); ?>
 <input type="hidden" name="debtor_id" value="<?php echo esc_attr($selected_debtor->id); ?>">
@@ -520,17 +518,17 @@ if (window.history.replaceState) {
 <?php foreach ($products as $idx => $product) : ?>
 <tr class="order-row" data-price="<?php echo esc_attr($product->price); ?>">
 <td><?php echo esc_html($product->name); ?><input type="hidden" name="order_items[<?php echo $idx; ?>][product_id]" value="<?php echo esc_attr($product->id); ?>"></td>
-<td style="color:#001943;font-weight:600"><?php echo number_format($product->price, 2); ?></td>
+<td style="color:#001943;font-weight:600"><?php echo number_format($product->price, 0); ?></td>
 <td><input type="number" name="order_items[<?php echo $idx; ?>][quantity]" class="qty" value="0" min="0" step="0.5" oninput="calcRow(this)"></td>
 <td><input type="number" name="order_items[<?php echo $idx; ?>][discount]" class="disc" value="0" min="0" step="0.01" oninput="calcRow(this)"></td>
-<td class="row-total" style="font-weight:600;color:#001943">0.00</td>
+<td class="row-total" style="font-weight:600;color:#001943">0</td>
 </tr>
 <?php endforeach; ?>
 </tbody>
 </table>
 </div>
-<div class="order-total"><span>Grand Total:</span><span class="total-value" id="grand-total">₦0.00</span></div>
-<div class="grand-display" id="grand-display"><span>Amount to add to debt:</span><strong id="grand-highlight">₦0.00</strong></div>
+<div class="order-total"><span>Grand Total:</span><span class="total-value" id="grand-total">₦0</span></div>
+<div class="grand-display" id="grand-display"><span>Amount to add to debt:</span><strong id="grand-highlight">₦0</strong></div>
 <div style="margin-top:1.5rem;display:flex;gap:1rem;justify-content:flex-end">
 <a href="<?php echo esc_url(remove_query_arg(array('debtor','action'))); ?>" class="btn btn-outline">Cancel</a>
 <button type="submit" name="cfi_debtor_order_submit" class="btn btn-primary"><i class="fas fa-plus"></i> Add to Debt</button>
@@ -925,7 +923,7 @@ function printDebtorOfflineReceipt() {
 <div class="glass">
 <h3 style="color:#001943;margin-top:0"><i class="fas fa-money-check"></i> Record Payment</h3>
 <p><strong>Debtor:</strong> <?php echo esc_html($selected_debtor->name); ?></p>
-<p><strong>Outstanding Balance:</strong> <span class="cfi-debtor-balance" data-debtor-id="<?php echo esc_attr($selected_debtor->id); ?>" style="color:#dc2626;font-size:1.5rem;font-weight:700">₦<?php echo number_format($selected_debtor->display_debt, 2); ?></span></p>
+<p><strong>Outstanding Balance:</strong> <span class="cfi-debtor-balance" data-debtor-id="<?php echo esc_attr($selected_debtor->id); ?>" style="color:#dc2626;font-size:1.5rem;font-weight:700">₦<?php echo number_format($selected_debtor->display_debt, 0); ?></span></p>
 <?php if ($selected_debtor->display_debt <= 0) : ?>
 <div style="background:#dcfce7;color:#166534;padding:1rem;border-radius:8px;margin:1rem 0"><i class="fas fa-check-circle"></i> No outstanding debt!</div>
 <a href="<?php echo esc_url(remove_query_arg(array('debtor','action'))); ?>" class="btn btn-primary">Back to Debtors</a>
@@ -956,7 +954,7 @@ function printDebtorOfflineReceipt() {
 <input type="hidden" name="home_amount" value="0">
 <?php endif; ?>
 </div>
-<div style="margin-top:1rem;padding:1rem;background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;border-radius:8px;text-align:center"><span style="font-size:0.9rem">Total Payment:</span><strong id="pay-total" style="font-size:1.5rem;display:block">₦0.00</strong></div>
+<div style="margin-top:1rem;padding:1rem;background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;border-radius:8px;text-align:center"><span style="font-size:0.9rem">Total Payment:</span><strong id="pay-total" style="font-size:1.5rem;display:block">₦0</strong></div>
 <div id="pay-warn" style="display:none;margin-top:0.5rem;padding:0.75rem;border-radius:8px;font-size:0.85rem"></div>
 <div style="margin-top:1.5rem;display:flex;gap:1rem;justify-content:flex-end">
 <a href="<?php echo esc_url(remove_query_arg(array('debtor','action'))); ?>" class="btn btn-outline">Cancel</a>
@@ -1292,7 +1290,7 @@ function printPaymentOfflineReceipt() {
 <div class="card" data-debtor-id="<?php echo esc_attr($debtor->id); ?>">
 <h3 class="card-name"><?php echo esc_html($debtor->name); ?></h3>
 <?php if ($debtor->phone) : ?><p class="card-phone"><i class="fas fa-phone"></i> <?php echo esc_html($debtor->phone); ?></p><?php endif; ?>
-<div class="card-balance cfi-debtor-balance <?php echo $debtor->display_debt <= 0 ? 'zero' : ''; ?>" data-debtor-id="<?php echo esc_attr($debtor->id); ?>">₦<?php echo number_format($debtor->display_debt, 2); ?></div>
+<div class="card-balance cfi-debtor-balance <?php echo $debtor->display_debt <= 0 ? 'zero' : ''; ?>" data-debtor-id="<?php echo esc_attr($debtor->id); ?>">₦<?php echo number_format($debtor->display_debt, 0); ?></div>
 <div class="card-actions">
 <a href="<?php echo esc_url(add_query_arg(array('debtor'=>$debtor->id,'action'=>'order'))); ?>" class="btn btn-primary"><i class="fas fa-cart-plus"></i> Order</a>
 <a href="<?php echo esc_url(add_query_arg(array('debtor'=>$debtor->id,'action'=>'pay'))); ?>" class="btn btn-success"><i class="fas fa-money-check"></i> Clear Debt</a>
@@ -1689,18 +1687,18 @@ h += '<div class="info-row"><span class="label">Staff:</span><span class="value"
 h += '</div>';
 h += '<div class="divider"></div>';
 h += '<div class="totals">';
-h += '<p><span>Balance Before:</span><span class="receipt-amount">₦<?php echo number_format($payment_receipt['balance_before'], 2); ?></span></p>';
-h += '<p class="grand"><span>Payment Amount:</span><span class="receipt-amount">₦<?php echo number_format($payment_receipt['payment_amount'], 2); ?></span></p>';
+h += '<p><span>Balance Before:</span><span class="receipt-amount">₦<?php echo number_format($payment_receipt['balance_before'], 0); ?></span></p>';
+h += '<p class="grand"><span>Payment Amount:</span><span class="receipt-amount">₦<?php echo number_format($payment_receipt['payment_amount'], 0); ?></span></p>';
 <?php if ($payment_receipt['transfer_amount'] > 0) : ?>
-h += '<p><span>  - Transfer (<?php echo esc_js($payment_receipt['bank_name']); ?>):</span><span class="receipt-amount">₦<?php echo number_format($payment_receipt['transfer_amount'], 2); ?></span></p>';
+h += '<p><span>  - Transfer (<?php echo esc_js($payment_receipt['bank_name']); ?>):</span><span class="receipt-amount">₦<?php echo number_format($payment_receipt['transfer_amount'], 0); ?></span></p>';
 <?php endif; ?>
 <?php if ($payment_receipt['cash_amount'] > 0) : ?>
-h += '<p><span>  - Cash:</span><span class="receipt-amount">₦<?php echo number_format($payment_receipt['cash_amount'], 2); ?></span></p>';
+h += '<p><span>  - Cash:</span><span class="receipt-amount">₦<?php echo number_format($payment_receipt['cash_amount'], 0); ?></span></p>';
 <?php endif; ?>
 <?php if ($payment_receipt['home_amount'] > 0) : ?>
-h += '<p><span>  - Home Calc:</span><span class="receipt-amount">₦<?php echo number_format($payment_receipt['home_amount'], 2); ?></span></p>';
+h += '<p><span>  - Home Calc:</span><span class="receipt-amount">₦<?php echo number_format($payment_receipt['home_amount'], 0); ?></span></p>';
 <?php endif; ?>
-h += '<p class="grand"><span>New Balance:</span><span class="receipt-amount">₦<?php echo number_format($payment_receipt['new_balance'], 2); ?></span></p>';
+h += '<p class="grand"><span>New Balance:</span><span class="receipt-amount">₦<?php echo number_format($payment_receipt['new_balance'], 0); ?></span></p>';
 h += '</div>';
 h += '<div class="divider"></div>';
 h += '<div class="footer"><p class="thanks">Payment received with thanks!</p><p>Powered by BendlessTech</p></div>';

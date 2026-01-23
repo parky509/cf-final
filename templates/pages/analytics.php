@@ -62,7 +62,7 @@ $order_summary_url = add_query_arg(array('date' => $detail_date), $resolve_page_
 $credit_summary_url = add_query_arg(array('date' => $detail_date), $resolve_page_url('cfi-credit-order-summary', '/credit-order-summary/'));
 
 $format_currency = function($value) {
-    return '₦' . number_format((float) $value, 2);
+    return '₦' . number_format((float) $value, 0);
 };
 $format_number = function($value) {
     return number_format((float) $value, 0);

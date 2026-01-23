@@ -545,7 +545,7 @@ $page_load_id = time() . '_' . mt_rand(100000, 999999);
                     <span>Total Sales (Take Order)</span>
                 </div>
                 <div class="cfi-financial-value highlight" id="val-total-sales" data-value="<?php echo esc_attr($total_sales); ?>">
-                    ₦<?php echo number_format($total_sales, 2); ?>
+                    ₦<?php echo number_format($total_sales, 0); ?>
                 </div>
             </div>
             
@@ -556,7 +556,7 @@ $page_load_id = time() . '_' . mt_rand(100000, 999999);
                     <span>Transfer/Card (Orders)</span>
                 </div>
                 <div class="cfi-financial-value negative" id="val-transfer-orders" data-value="<?php echo esc_attr($transfer_from_orders); ?>">
-                    -₦<?php echo number_format($transfer_from_orders, 2); ?>
+                    -₦<?php echo number_format($transfer_from_orders, 0); ?>
                 </div>
             </div>
             
@@ -567,7 +567,7 @@ $page_load_id = time() . '_' . mt_rand(100000, 999999);
                     <span>Cash Sales</span>
                 </div>
                 <div class="cfi-financial-value" id="val-cash-sales" data-value="<?php echo esc_attr($cash_sales); ?>">
-                    ₦<?php echo number_format($cash_sales, 2); ?>
+                    ₦<?php echo number_format($cash_sales, 0); ?>
                 </div>
             </div>
             
@@ -578,7 +578,7 @@ $page_load_id = time() . '_' . mt_rand(100000, 999999);
                     <span>Transfer/Card (Cash Out)</span>
                 </div>
                 <div class="cfi-financial-value negative" id="val-transfer-cashout" data-value="<?php echo esc_attr($transfer_from_cashout); ?>">
-                    -₦<?php echo number_format($transfer_from_cashout, 2); ?>
+                    -₦<?php echo number_format($transfer_from_cashout, 0); ?>
                 </div>
             </div>
             
@@ -589,7 +589,7 @@ $page_load_id = time() . '_' . mt_rand(100000, 999999);
                     <span>Transfer/Card (Debtors)</span>
                 </div>
                 <div class="cfi-financial-value muted" id="val-transfer-debtors" data-value="<?php echo esc_attr($transfer_from_debtors); ?>">
-                    ₦<?php echo number_format($transfer_from_debtors, 2); ?> <small>(not in calc)</small>
+                    ₦<?php echo number_format($transfer_from_debtors, 0); ?> <small>(not in calc)</small>
                 </div>
             </div>
             
@@ -600,7 +600,7 @@ $page_load_id = time() . '_' . mt_rand(100000, 999999);
                     <span>Debtors Cash</span>
                 </div>
                 <div class="cfi-financial-value positive" id="val-debtors-cash" data-value="<?php echo esc_attr($debtors_cash); ?>">
-                    +₦<?php echo number_format($debtors_cash, 2); ?>
+                    +₦<?php echo number_format($debtors_cash, 0); ?>
                 </div>
             </div>
             
@@ -611,7 +611,7 @@ $page_load_id = time() . '_' . mt_rand(100000, 999999);
                     <span>Expenses</span>
                 </div>
                 <div class="cfi-financial-value negative" id="val-expenses" data-value="<?php echo esc_attr($expenses); ?>">
-                    -₦<?php echo number_format($expenses, 2); ?>
+                    -₦<?php echo number_format($expenses, 0); ?>
                 </div>
             </div>
             
@@ -622,7 +622,7 @@ $page_load_id = time() . '_' . mt_rand(100000, 999999);
                     <span>Old Cash (Yesterday)</span>
                 </div>
                 <div class="cfi-financial-value positive" id="val-old-cash" data-value="<?php echo esc_attr($old_cash); ?>">
-                    +₦<?php echo number_format($old_cash, 2); ?>
+                    +₦<?php echo number_format($old_cash, 0); ?>
                 </div>
             </div>
             
@@ -656,7 +656,7 @@ $page_load_id = time() . '_' . mt_rand(100000, 999999);
                 <span>Cash Left</span>
             </div>
             <div class="cfi-cash-left-value" id="cfi-cash-left">
-                ₦<?php echo number_format($cash_left, 2); ?>
+                ₦<?php echo number_format($cash_left, 0); ?>
             </div>
         </div>
         

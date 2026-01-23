@@ -197,16 +197,16 @@ class CFI_Products {
     }
     
     /**
-     * Format price with currency
+     * Format price with currency - NO decimals
      */
     public static function format_price($amount) {
-        return '₦' . number_format((float) $amount, 2);
+        return '₦' . number_format((float) $amount, 0);
     }
     
     /**
-     * Format number with commas
+     * Format number with commas - NO decimals
      */
     public static function format_number($number) {
-        return number_format((float) $number, 2);
+        return number_format((float) $number, 0);
     }
 }

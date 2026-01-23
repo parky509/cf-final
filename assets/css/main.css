@@ -1375,6 +1375,109 @@ body .cfi-card-description {
     padding-bottom: 20px !important;
 }
 
+/* ============================================
+   GLOBAL FONT SIZE BOOST - Bigger fonts across site
+   ============================================ */
+body, html {
+    font-size: 18px !important;
+}
+
+/* Increase all text elements */
+.cfi-main, .cfi-main * {
+    font-size: inherit;
+}
+
+/* Tables - Bigger text */
+table, .cfi-table {
+    font-size: 1.1rem !important;
+}
+
+table th, table td,
+.cfi-table th, .cfi-table td {
+    font-size: 1.1rem !important;
+    padding: 0.75rem 1rem !important;
+}
+
+/* Form inputs - Bigger */
+input, select, textarea,
+.cfi-input, .cfi-select, .cfi-textarea {
+    font-size: 1.1rem !important;
+    padding: 0.75rem 1rem !important;
+}
+
+/* Labels bigger */
+label, .cfi-label {
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+}
+
+/* Buttons bigger */
+button, .cfi-btn {
+    font-size: 1.1rem !important;
+    padding: 0.75rem 1.25rem !important;
+}
+
+/* Cards and content */
+.cfi-card, .cfi-glass {
+    font-size: 1.1rem !important;
+}
+
+/* Debtor cards */
+.cfi-debtor-card .card-name {
+    font-size: 1.3rem !important;
+}
+
+.cfi-debtor-card .card-balance {
+    font-size: 1.5rem !important;
+}
+
+.cfi-debtor-card .card-phone {
+    font-size: 1.1rem !important;
+}
+
+/* Order/History amounts */
+.amount, .price, .total,
+[class*="amount"], [class*="price"], [class*="total"] {
+    font-size: 1.2rem !important;
+    font-weight: 700 !important;
+}
+
+/* Price displays */
+.cfi-price, .cfi-amount, .cfi-total,
+.receipt-amount, .row-total, .grand-total {
+    font-size: 1.3rem !important;
+    font-weight: 800 !important;
+}
+
+/* Make headings even bigger */
+h1 { font-size: 2.5rem !important; }
+h2 { font-size: 2rem !important; }
+h3 { font-size: 1.75rem !important; }
+h4 { font-size: 1.5rem !important; }
+h5 { font-size: 1.25rem !important; }
+h6 { font-size: 1.1rem !important; }
+
+/* Page titles */
+.cfi-page-title h1 {
+    font-size: 2.2rem !important;
+}
+
+/* Navigation */
+.cfi-nav a {
+    font-size: 1rem !important;
+}
+
+/* Summary cards numbers */
+.cfi-summary-card .number,
+.cfi-stat-number, .stat-number {
+    font-size: 2rem !important;
+}
+
+/* Admin panel */
+.cfi-admin-number {
+    font-size: 2.5rem !important;
+}
+
 /* Print Styles */
 @media print {
     .cfi-header,
